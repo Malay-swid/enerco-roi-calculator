@@ -1,192 +1,234 @@
-import React from 'react';
-import EnergyROICalculator from '../components/EnergyROICalculator';
-import { Shield, Zap, Leaf, ArrowRight } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { MessageCircle, Send, X } from 'lucide-react';
+import { CalculatorSidebar } from '../components/CalculatorSidebar';
+import { ResultCard } from '../components/ResultCard';
+import { Header } from '../components/Header';
+import { ComplianceCheck } from '../components/ComplianceCheck';
+import { BankingRegime } from '../components/BankingRegime';
+import { AnnualSavingsChart } from '../components/AnnualSavingsChart';
+import { MeaningBanner } from '../components/MeaningBanner';
+import { ReportForm } from '../components/ReportForm';
+import { Footer } from '../components/Footer';
+import { defaultBessAssumptions } from '../lib/bessAssumptions';
+import { calculateBessScenario, defaultBessInputs, type BessInputs } from '../lib/bessCalculator';
 
-const Home = () => {
+const currencyCr = (value: number) => `₹${value.toFixed(2)} Cr`;
+const formatYears = (value: number | null) => (value === null ? 'N/A' : `${value.toFixed(1)} yrs`);
+
+export default function Home() {
+  const [inputs, setInputs] = useState<BessInputs>(defaultBessInputs);
+  const [chatOpen, setChatOpen] = useState(false);
+  const results = useMemo(() => calculateBessScenario(inputs, defaultBessAssumptions), [inputs]);
+  const showDebug = import.meta.env.DEV;
+  const bankingDisplay = inputs.solarCapacityMW < 1
+    ? { sizeBand: '500 kW - 1 MW', monthlySlots: '8', slotWord: 'Eight' }
+    : inputs.solarCapacityMW <= 5
+      ? { sizeBand: '1 - 5 MW', monthlySlots: '12', slotWord: 'Twelve' }
+      : { sizeBand: 'Above 5 MW', monthlySlots: '12', slotWord: 'Twelve' };
+
+  const updateInput = <K extends keyof BessInputs>(field: K, value: BessInputs[K]) => {
+    setInputs((previous) => ({ ...previous, [field]: value }));
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Navigation */}
-      <nav className="bg-[#0A192F] text-white py-4 px-6 flex justify-between items-center sticky top-0 z-50 shadow-md">
-        <div className="text-2xl font-bold tracking-tighter flex items-center">
-          <Zap className="text-emerald-400 mr-2" fill="currentColor" />
-          SWID
-        </div>
-        <div className="hidden md:flex space-x-8 text-sm font-medium text-slate-300">
-          <a href="#services" className="hover:text-emerald-400 transition-colors">Services</a>
-          <a href="#about" className="hover:text-emerald-400 transition-colors">About Us</a>
-          <a href="#roi" className="hover:text-emerald-400 transition-colors">ROI Calculator</a>
-        </div>
-        <button className="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-lg text-sm font-bold transition-all">
-          Contact Us
-        </button>
-      </nav>
+    <div className="min-h-screen bg-[#dfe9e2] px-2 py-2 text-[#112b25] sm:px-3 sm:py-4 md:px-5">
+      <div className="mx-auto max-w-[1760px] overflow-hidden border border-[#bfd0c3] bg-[#f4f4f2] shadow-[0_10px_25px_rgba(15,23,42,0.08)]">
+        <Header />
 
-      {/* Hero Section */}
-      <header className="relative bg-[#0A192F] text-white pt-24 pb-32 px-6 overflow-hidden">
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-emerald-500 opacity-10 blur-3xl rounded-full translate-x-1/4 -translate-y-1/4"></div>
-        <div className="max-w-6xl mx-auto relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-8">
-            <h1 className="text-5xl lg:text-6xl font-extrabold leading-tight">
-              Industrial Energy <span className="text-emerald-400">Optimization</span> for the Modern Enterprise.
-            </h1>
-            <p className="text-xl text-slate-400 leading-relaxed">
-              We help B2B industrial firms transition to renewable energy, slashing operational costs and achieving carbon neutrality with data-driven financial projections.
-            </p>
-            <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-              <a href="#roi" className="flex items-center justify-center px-8 py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-all transform hover:scale-105 text-center">
-                Calculate Your Savings <ArrowRight className="ml-2" size={20} />
-              </a>
-              <a href="#services" className="flex items-center justify-center px-8 py-4 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-all text-center">
-                Explore Solutions
-              </a>
+        <div className="bg-[#edf7ef] px-4 pb-3 pt-2">
+          <div className="flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
+            <div className="min-w-0">
+              <div className="mb-2 text-[9px] font-bold uppercase tracking-[0.2em] text-[#0f5e47]">
+                SWID ENERGY SOLUTIONS · REGULATORY IMPACT CALCULATOR
+              </div>
+              <h1 className="max-w-[780px] text-[18px] font-black leading-[1.15] text-[#163a2f] md:text-[28px]">
+                Maharashtra&apos;s draft storage mandate: what it does to your solar payback
+              </h1>
+              <p className="mt-2 text-[12px] text-[#46675c]">
+                Independent advisory since 2009. No hardware sales, no EPC, no vendor commissions.
+              </p>
+            </div>
+
+            <div className="rounded-[4px] border border-[#bfe0ca] bg-[#ecf8f1] px-2 py-1.5 text-left text-[10px] font-bold uppercase tracking-[0.14em] text-[#0f5e47] sm:mt-1 sm:text-right">
+              <div>MERC DRAFT · 22 SEP 2026</div>
+              <div className="mt-1 text-[9px] normal-case tracking-[0] text-[#4f675f]">Public comments close 15 Oct 2026</div>
             </div>
           </div>
-          <div className="hidden lg:block relative">
-            <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700 shadow-2xl rotate-3">
-              <div className="flex items-center space-x-4 mb-6">
-                <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center text-white font-bold text-xl">E</div>
-                <div>
-                  <p className="font-bold">Enterprise ROI</p>
-                  <p className="text-xs text-slate-400">Projected Annual Savings</p>
+        </div>
+
+        <div className="bg-[#0f7a57] px-3 py-3 text-white">
+          <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2 md:gap-3 xl:grid-cols-4">
+            <ResultCard
+              label="Solar-only payback"
+              value={formatYears(results.solarOnlyPayback)}
+              subtitle="Reference only: not allowed above 100 kW"
+              highlight
+            />
+            <ResultCard
+              label="Solar + BESS payback"
+              value={formatYears(results.solarPlusBessPayback)}
+              subtitle={`₹${results.totalCapex.toFixed(2)} Cr total capex`}
+              dark
+            />
+            <ResultCard
+              label="Payback penalty"
+              value={`${results.paybackPenalty !== null ? `${results.paybackPenalty >= 0 ? '+' : ''}${results.paybackPenalty.toFixed(1)} yrs` : 'N/A'}`}
+              subtitle="Cost of the storage mandate"
+            />
+            <ResultCard
+              label="BESS on its own"
+              value={formatYears(results.bessStandalonePayback)}
+              subtitle={currencyCr(results.bessOM)}
+            />
+          </div>
+        </div>
+
+        <main className="grid min-w-0 lg:grid-cols-[300px_minmax(0,1fr)]">
+          <div className="order-2 min-w-0 lg:order-1">
+            <CalculatorSidebar inputs={inputs} onInputChange={updateInput} />
+          </div>
+
+          <section className="order-1 min-w-0 bg-[#f1f4f1] p-2 sm:p-3 lg:order-2">
+            <div className="space-y-4">
+              <div className="grid min-w-0 gap-4 xl:grid-cols-2">
+                <ComplianceCheck
+                  complianceStatus={results.complianceStatus}
+                  requiredStorage={results.requiredStorage}
+                  bessPower={results.bessPower}
+                  bessEnergy={results.bessEnergy}
+                  transformerHeadroom={results.transformerHeadroom}
+                  solarCapacity={results.solarCapacity}
+                  transformerRatingMVA={inputs.transformerRatingMVA}
+                  applicationWindow={inputs.applicationWindow}
+                />
+
+                <BankingRegime
+                  monthlySlots={bankingDisplay.monthlySlots}
+                  capPerSlot="None"
+                  sunset="None"
+                  sizeBand={bankingDisplay.sizeBand}
+                  intro={`${bankingDisplay.slotWord} banking slots a month. Excess outside those windows is at risk, which is what the storage is meant to absorb.`}
+                  text="Fixed and variable banking and standby charges apply to every project above 10 kW. Rates aren't published in the draft yet; the banking charge slider stands in for them."
+                />
+              </div>
+
+              <AnnualSavingsChart
+                solarOnlySavings={results.annualSavingsSolarOnly}
+                solarPlusBessSavings={results.annualSavingsSolarPlusBess}
+                annualExcessSolar={results.annualExcessSolar}
+                solarGeneration={results.solarGeneration}
+                bankedExcessSavings={results.bankingSavings}
+                bessTimeShiftSavings={results.energySavingsFromBess - results.bessOM}
+                demandSavings={results.demandSavings}
+                excessAbsorbedPercent={results.excessAbsorbedPercent}
+                bessOM={results.bessOM}
+              />
+
+              <MeaningBanner
+                paybackPenalty={results.paybackPenalty}
+                bessStandalonePayback={results.bessStandalonePayback}
+              />
+
+              <ReportForm />
+
+              {showDebug ? (
+                <div className="rounded-[6px] border border-[#dfe7df] bg-[#f6faf7] p-3 text-[11px] text-[#243d36]">
+                  <div className="mb-2 text-[9px] font-bold uppercase tracking-[0.18em]">Calculation details</div>
+                  <div className="grid gap-2 md:grid-cols-3">
+                    <div>Solar generation: {results.solarGeneration.toFixed(0)} kWh/yr ({(results.solarGeneration / 1000000).toFixed(2)} MU/yr)</div>
+                    <div>Excess over load: {results.annualExcessSolar.toFixed(0)} kWh/yr ({(results.annualExcessSolar / 1000000).toFixed(2)} MU/yr)</div>
+                    <div>Self-consumed solar: {results.annualSelfConsumedSolar.toFixed(0)} kWh/yr ({(results.annualSelfConsumedSolar / 1000000).toFixed(2)} MU/yr)</div>
+                    <div>BESS power: {results.bessPower.toFixed(2)} MW</div>
+                    <div>BESS energy: {results.bessEnergy.toFixed(2)} MWh</div>
+                    <div>Maximum BESS charging: {results.maxAnnualBessCharging.toFixed(0)} kWh/yr</div>
+                    <div>Eligible excess: {results.eligibleExcessForBess.toFixed(0)} kWh/yr</div>
+                    <div>Actual BESS charging: {results.actualAnnualBessCharging.toFixed(0)} kWh/yr</div>
+                    <div>Excess absorbed: {results.excessAbsorbedPercent.toFixed(1)}%</div>
+                    <div>Delivered after {inputs.roundTripEfficiency}% RTE: {results.annualBessEnergy.toFixed(0)} kWh/yr</div>
+                    <div>Banking + standby input: ₹{inputs.bankingStandbyCharge.toFixed(2)}/kWh (excluded from reference savings equations)</div>
+                    <div>BESS energy savings: ₹{results.energySavingsFromBess.toFixed(5)} Cr/yr</div>
+                    <div>Demand relief: {results.demandReliefKVA.toFixed(0)} kVA</div>
+                    <div>Demand savings: ₹{results.demandSavings.toFixed(2)} Cr/yr</div>
+                    <div>Solar savings gross: ₹{results.annualSolarSavingsGross.toFixed(2)} Cr/yr</div>
+                    <div>Solar O&M: ₹{results.solarOM.toFixed(2)} Cr/yr</div>
+                    <div>Solar-only net savings: ₹{results.annualSavingsSolarOnly.toFixed(5)} Cr/yr</div>
+                    <div>BESS O&M: ₹{results.bessOM.toFixed(2)} Cr/yr</div>
+                    <div>Incremental BESS net savings: ₹{results.incrementalBessSavings.toFixed(5)} Cr/yr</div>
+                    <div>Solar + BESS net savings: ₹{results.annualSavingsSolarPlusBess.toFixed(5)} Cr/yr</div>
+                    <div>Solar payback: {formatYears(results.solarOnlyPayback)}</div>
+                    <div>Solar + BESS payback: {formatYears(results.solarPlusBessPayback)}</div>
+                    <div>BESS standalone payback: {formatYears(results.bessStandalonePayback)}</div>
+                    <div>Payback improvement: {formatYears(results.paybackPenalty)}</div>
+                    <div>Solar capex: ₹{results.solarCapex.toFixed(2)} Cr</div>
+                    <div>BESS capex: ₹{results.bessCapex.toFixed(2)} Cr</div>
+                    <div>Total capex: ₹{results.totalCapex.toFixed(2)} Cr</div>
+                    <div>Storage requirement: {results.requiredStorage.toFixed(2)} MWh ({results.complianceStatus ? 'Compliant' : 'Not compliant'})</div>
+                    <div>Transformer allowed rooftop: {results.allowedRooftopCumulative.toFixed(2)} MW</div>
+                    <div>Transformer overage: {results.transformerHeadroom.toFixed(2)} MW</div>
+                    <div>Project ROI: {results.roi.toFixed(1)}%</div>
+                  </div>
                 </div>
-              </div>
-              <div className="text-4xl font-bold text-emerald-400 mb-2">$142,000</div>
-              <div className="w-full bg-slate-700 h-4 rounded-full overflow-hidden">
-                <div className="bg-emerald-500 h-full w-3/4"></div>
-              </div>
-              <p className="text-xs text-slate-400 mt-4">Payback Period: 3.4 Years</p>
-            </div>
-          </div>
-        </div>
-      </header>
+              ) : null}
 
-      {/* Services Section */}
-      <section id="services" className="py-24 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-[#0A192F] mb-4">Our Industrial Solutions</h2>
-            <p className="text-slate-500 max-w-2xl mx-auto">We deploy high-efficiency renewable technology tailored for heavy-duty industrial power requirements.</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                title: 'Solar PV Arrays',
-                desc: 'Utility-scale photovoltaic installations with smart grid integration for massive energy offsets.',
-                icon: <Zap className="text-emerald-500" />,
-                color: 'bg-emerald-50'
-              },
-              {
-                title: 'Wind-Solar Hybrid',
-                desc: 'Diversified energy generation combining the best of both worlds to ensure consistent 24/7 power.',
-                icon: <Leaf className="text-emerald-500" />,
-                color: 'bg-emerald-50'
-              },
-              {
-                title: 'BESS (Battery Storage)',
-                desc: 'Industrial-grade energy storage to manage peak loads and eliminate costly demand charges.',
-                icon: <Shield className="text-emerald-500" />,
-                color: 'bg-emerald-50'
-              }
-            ].map((service, idx) => (
-              <div key={idx} className="p-8 bg-white rounded-2xl border border-slate-200 hover:border-emerald-500 transition-all hover:shadow-xl group">
-                <div className={`w-14 h-14 ${service.color} rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
-                  {service.icon}
-                </div>
-                <h3 className="text-xl font-bold text-[#0A192F] mb-3">{service.title}</h3>
-                <p className="text-slate-500 leading-relaxed mb-6">{service.desc}</p>
-                <a href="#" className="text-emerald-600 font-bold text-sm flex items-center hover:underline">
-                  Learn More <ArrowRight size={16} className="ml-1" />
-                </a>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ROI Calculator Section */}
-      <section id="roi" className="py-24 px-6 bg-slate-100">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-[#0A192F] mb-4">Financial Projection Tool</h2>
-            <p className="text-slate-500">Stop guessing. Get a precise estimate of your potential energy savings and payback period.</p>
-          </div>
-          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
-            <EnergyROICalculator />
-          </div>
-        </div>
-      </section>
-
-      {/* About Section */}
-      <section id="about" className="py-24 px-6">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-          <div className="relative">
-            <div className="bg-[#0A192F] aspect-square rounded-3xl overflow-hidden shadow-2xl">
-              <div className="absolute inset-0 flex items-center justify-center text-emerald-400 opacity-20">
-                <Zap size={200} />
-              </div>
-              <div className="absolute bottom-8 left-8 p-6 bg-white rounded-2xl shadow-xl max-w-xs">
-                <p className="text-[#0A192F] font-bold">"SWID transformed our logistics hub's energy cost structure."</p>
-                <p className="text-slate-400 text-xs mt-2">— Global Logistics Inc.</p>
+              <div className="rounded-[6px] border border-[#dfe7df] bg-[#f6faf7] p-3 text-[10px] leading-5 text-[#596f68]">
+                Indicative only. Simple payback on year-1 cash flows; excludes degradation, tariff escalation, tax benefits and BESS augmentation. Demand relief assumes the BESS saves peak kVA hits per booked power for the solar show. Sanctioned connectivity assumed equal to solar capacity. Rules follow MERC&apos;s draft regulations of 22 Sep 2026 and may change final notification.
               </div>
             </div>
-          </div>
-          <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-[#0A192F]">Engineering a Sustainable Industrial Future</h2>
-            <p className="text-slate-500 leading-relaxed">
-              SWID is not just a consulting firm; we are engineering partners. We specialize in high-capacity renewable energy transitions for warehouses, factories, and data centers.
-            </p>
-            <div className="grid grid-cols-2 gap-6">
-              <div className="p-4 border-l-4 border-emerald-500 bg-slate-50">
-                <p className="text-2xl font-bold text-[#0A192F]">500MW+</p>
-                <p className="text-xs text-slate-500">Deployed Capacity</p>
-              </div>
-              <div className="p-4 border-l-4 border-emerald-500 bg-slate-50">
-                <p className="text-2xl font-bold text-[#0A192F]">$120M+</p>
-                <p className="text-xs text-slate-500">Client Savings</p>
+          </section>
+        </main>
+
+        <Footer />
+      </div>
+
+      {chatOpen ? (
+        <section
+          id="swid-chat-popup"
+          aria-label="Chat with SWID"
+          className="fixed bottom-[76px] right-3 z-50 w-[min(360px,calc(100vw-1.5rem))] overflow-hidden rounded-[12px] border border-[#cbd9ce] bg-white shadow-[0_12px_40px_rgba(17,43,37,0.22)] sm:bottom-[84px] sm:right-5"
+          role="dialog"
+        >
+          <div className="flex items-center justify-between gap-3 bg-[#0d3f31] px-4 py-3 text-white">
+            <div>
+              <div className="text-[14px] font-bold">We are online! Let&apos;s chat</div>
+              <div className="mt-1 flex items-center gap-2 text-[11px] text-[#cce7d8]">
+                <span className="h-2 w-2 rounded-full bg-[#69d391]" /> SWID energy team
               </div>
             </div>
-            <button className="px-8 py-3 bg-[#0A192F] text-white font-bold rounded-xl hover:bg-slate-800 transition-all">
-              Read Case Studies
+            <button
+              aria-label="Close chat popup"
+              className="rounded p-1 text-white hover:bg-white/10"
+              onClick={() => setChatOpen(false)}
+              type="button"
+            >
+              <X className="h-5 w-5" />
             </button>
           </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-[#0A192F] text-white py-16 px-6 border-t border-slate-800">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
-          <div className="col-span-1 md:col-span-2 space-y-6">
-            <div className="text-2xl font-bold tracking-tighter flex items-center">
-              <Zap className="text-emerald-400 mr-2" fill="currentColor" />
-              SWID
+          <div className="p-4">
+            <div className="max-w-[280px] rounded-[10px] rounded-tl-sm bg-[#f0f5f0] px-3 py-2.5 text-[13px] leading-5 text-[#34463b]">
+              Hi! How can we help with your solar and storage project?
             </div>
-            <p className="text-slate-400 max-w-sm">
-              Pioneering the shift to industrial renewable energy. Data-driven projections, professional engineering, and sustainable growth.
-            </p>
+            <a
+              className="mt-4 inline-flex items-center gap-2 rounded-[6px] bg-[#0f7a57] px-3 py-2 text-[12px] font-bold text-white hover:bg-[#0d684b]"
+              href="#report-form"
+              onClick={() => setChatOpen(false)}
+            >
+              Request a detailed report <Send className="h-3.5 w-3.5" />
+            </a>
           </div>
-          <div>
-            <h4 className="font-bold mb-6">Quick Links</h4>
-            <ul className="space-y-4 text-sm text-slate-400">
-              <li><a href="#services" className="hover:text-white transition-colors">Services</a></li>
-              <li><a href="#about" className="hover:text-emerald-400 transition-colors">ROI Calculator</a></li>
-              <li><a href="#contact" className="hover:text-white transition-colors">Contact Us</a></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-bold mb-6">Contact</h4>
-            <ul className="space-y-4 text-sm text-slate-400">
-              <li>info@swid.industrial</li>
-              <li>+1 (555) 012-3456</li>
-              <li>123 Energy Plaza, Industrial Way, NY</li>
-            </ul>
-          </div>
-        </div>
-        <div className="mt-16 pt-8 border-t border-slate-800 text-center text-xs text-slate-500">
-          © 2026 SWID Industrial Energy Consulting. All rights reserved.
-        </div>
-      </footer>
+        </section>
+      ) : null}
+
+      <button
+        aria-controls="swid-chat-popup"
+        aria-expanded={chatOpen}
+        aria-label={chatOpen ? 'Close chat popup' : 'We are online! Let’s chat'}
+        className="fixed bottom-3 right-3 z-50 inline-flex min-h-12 items-center gap-2 rounded-full bg-[#0d6b4d] px-4 py-3 text-[13px] font-bold text-white shadow-[0_5px_18px_rgba(13,63,49,0.3)] transition hover:bg-[#0b583f] sm:bottom-5 sm:right-5"
+        onClick={() => setChatOpen((open) => !open)}
+        type="button"
+      >
+        <MessageCircle className="h-5 w-5" />
+        <span>We are online! Let&apos;s chat</span>
+      </button>
     </div>
   );
-};
-
-export default Home;
+}

@@ -22,7 +22,7 @@ const INITIAL_DATA: FormData = {
   installationCost: '',
   techType: 'Solar PV',
   savingPercent: 20,
-  companyName: 'SWID',
+  companyName: '',
   email: '',
   industry: '',
 };

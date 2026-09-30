@@ -1,6 +1,6 @@
-# ⚡ Enerco Industrial Energy ROI Calculator
+# ⚡ SWID Industrial Energy ROI Calculator
 
-A professional B2B lead-generation tool and corporate presence for **Enerco**, a renewable energy consulting firm. This application allows industrial enterprises to calculate their potential energy savings and payback periods when transitioning to renewable energy sources.
+A professional B2B lead-generation tool and corporate presence for **SWID**, a renewable energy consulting firm. This application allows industrial enterprises to calculate their potential energy savings and payback periods when transitioning to renewable energy sources.
 
 ## 🚀 Key Features
 - **Multi-Step Wizard:** Intuitive user flow from energy profile $\rightarrow$ investment $\rightarrow$ optimization $\rightarrow$ lead capture.
@@ -18,8 +18,8 @@ A professional B2B lead-generation tool and corporate presence for **Enerco**, a
 ## 💻 Local Setup
 1. **Clone the repository:**
    \`\`\`bash
-   git clone https://github.com/Malay-swid/enerco-roi-calculator.git
-   cd enerco-roi-calculator
+   git clone https://github.com/Malay-swid/swid-roi-calculator.git
+   cd swid-roi-calculator
    \`\`\`
 2. **Install dependencies:**
    \`\`\`bash
