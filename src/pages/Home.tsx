@@ -21,10 +21,10 @@ export default function Home() {
   const results = useMemo(() => calculateBessScenario(inputs, defaultBessAssumptions), [inputs]);
   const showDebug = import.meta.env.DEV;
   const bankingDisplay = inputs.solarCapacityMW < 1
-    ? { sizeBand: '500 kW - 1 MW', monthlySlots: '8', slotWord: 'Eight' }
+    ? { sizeBand: '500 kW - 1 MW', monthlySlots: '8', capPerSlot: 'None', sunset: 'None', slotWord: 'Eight' }
     : inputs.solarCapacityMW <= 5
-      ? { sizeBand: '1 - 5 MW', monthlySlots: '12', slotWord: 'Twelve' }
-      : { sizeBand: 'Above 5 MW', monthlySlots: '12', slotWord: 'Twelve' };
+      ? { sizeBand: '1 - 5 MW', monthlySlots: '12', capPerSlot: 'None', sunset: 'None', slotWord: 'Twelve' }
+      : { sizeBand: '> 5 MW', monthlySlots: '24', capPerSlot: '10%', sunset: '3 yrs', slotWord: 'Twenty-four' };
 
   const updateInput = <K extends keyof BessInputs>(field: K, value: BessInputs[K]) => {
     setInputs((previous) => ({ ...previous, [field]: value }));
@@ -104,8 +104,8 @@ export default function Home() {
 
                 <BankingRegime
                   monthlySlots={bankingDisplay.monthlySlots}
-                  capPerSlot="None"
-                  sunset="None"
+                  capPerSlot={bankingDisplay.capPerSlot}
+                  sunset={bankingDisplay.sunset}
                   sizeBand={bankingDisplay.sizeBand}
                   intro={`${bankingDisplay.slotWord} banking slots a month. Excess outside those windows is at risk, which is what the storage is meant to absorb.`}
                   text="Fixed and variable banking and standby charges apply to every project above 10 kW. Rates aren't published in the draft yet; the banking charge slider stands in for them."
