@@ -22,7 +22,7 @@ const INITIAL_DATA: FormData = {
   installationCost: '',
   techType: 'Solar PV',
   savingPercent: 20,
-  companyName: '',
+  companyName: 'SWID',
   email: '',
   industry: '',
 };
@@ -53,7 +53,7 @@ export default function EnergyROICalculator() {
   const [step, setStep] = useState(1);
   const [data, setData] = useState<FormData>(INITIAL_DATA);
 
-  const updateData = (field: keyof FormData, value: any) => {
+  const updateData = <K extends keyof FormData>(field: K, value: FormData[K]) => {
     setData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -266,7 +266,10 @@ export default function EnergyROICalculator() {
                       <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value/1000}k`} />
                       <Tooltip 
                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                        formatter={(value) => [`$${value.toLocaleString()}`, '']}
+                        formatter={(value) => {
+                          const numericValue = Number(value);
+                          return [`$${Number.isFinite(numericValue) ? numericValue.toLocaleString() : '0'}`, ''];
+                        }}
                       />
                       <Legend verticalAlign="top" align="right" height={36} />
                       <Line 

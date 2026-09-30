@@ -9,7 +9,7 @@ const Home = () => {
       <nav className="bg-[#0A192F] text-white py-4 px-6 flex justify-between items-center sticky top-0 z-50 shadow-md">
         <div className="text-2xl font-bold tracking-tighter flex items-center">
           <Zap className="text-emerald-400 mr-2" fill="currentColor" />
-          ENERCO
+          SWID
         </div>
         <div className="hidden md:flex space-x-8 text-sm font-medium text-slate-300">
           <a href="#services" className="hover:text-emerald-400 transition-colors">Services</a>
@@ -125,7 +125,7 @@ const Home = () => {
                 <Zap size={200} />
               </div>
               <div className="absolute bottom-8 left-8 p-6 bg-white rounded-2xl shadow-xl max-w-xs">
-                <p className="text-[#0A192F] font-bold">"Enerco transformed our logistics hub's energy cost structure."</p>
+                <p className="text-[#0A192F] font-bold">"SWID transformed our logistics hub's energy cost structure."</p>
                 <p className="text-slate-400 text-xs mt-2">— Global Logistics Inc.</p>
               </div>
             </div>
@@ -133,7 +133,7 @@ const Home = () => {
           <div className="space-y-6">
             <h2 className="text-3xl font-bold text-[#0A192F]">Engineering a Sustainable Industrial Future</h2>
             <p className="text-slate-500 leading-relaxed">
-              Enerco is not just a consulting firm; we are engineering partners. We specialize in high-capacity renewable energy transitions for warehouses, factories, and data centers.
+              SWID is not just a consulting firm; we are engineering partners. We specialize in high-capacity renewable energy transitions for warehouses, factories, and data centers.
             </p>
             <div className="grid grid-cols-2 gap-6">
               <div className="p-4 border-l-4 border-emerald-500 bg-slate-50">
@@ -158,7 +158,7 @@ const Home = () => {
           <div className="col-span-1 md:col-span-2 space-y-6">
             <div className="text-2xl font-bold tracking-tighter flex items-center">
               <Zap className="text-emerald-400 mr-2" fill="currentColor" />
-              ENERCO
+              SWID
             </div>
             <p className="text-slate-400 max-w-sm">
               Pioneering the shift to industrial renewable energy. Data-driven projections, professional engineering, and sustainable growth.
@@ -175,14 +175,14 @@ const Home = () => {
           <div>
             <h4 className="font-bold mb-6">Contact</h4>
             <ul className="space-y-4 text-sm text-slate-400">
-              <li>info@enerco.industrial</li>
+              <li>info@swid.industrial</li>
               <li>+1 (555) 012-3456</li>
               <li>123 Energy Plaza, Industrial Way, NY</li>
             </ul>
           </div>
         </div>
         <div className="mt-16 pt-8 border-t border-slate-800 text-center text-xs text-slate-500">
-          © 2026 Enerco Industrial Energy Consulting. All rights reserved.
+          © 2026 SWID Industrial Energy Consulting. All rights reserved.
         </div>
       </footer>
     </div>
