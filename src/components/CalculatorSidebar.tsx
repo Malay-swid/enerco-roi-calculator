@@ -74,7 +74,7 @@ export function CalculatorSidebar({ inputs, onInputChange }: CalculatorSidebarPr
         <div>
           <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#586f66]">Tariff & banking</div>
           <div className="space-y-3">
-            {sliderFields.slice(4, 9).map((slider) => (
+            {sliderFields.slice(4, 8).map((slider) => (
               <SliderInput
                 key={slider.field}
                 label={slider.label}
@@ -92,7 +92,7 @@ export function CalculatorSidebar({ inputs, onInputChange }: CalculatorSidebarPr
         <div>
           <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#586f66]">Storage</div>
           <div className="space-y-3">
-            {sliderFields.slice(9).map((slider) => (
+            {sliderFields.slice(8).map((slider) => (
               <SliderInput
                 key={slider.field}
                 label={slider.label}

@@ -56,39 +56,41 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="bg-[#0f7a57] px-3 py-3 text-white">
-          <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2 md:gap-3 xl:grid-cols-4">
-            <ResultCard
-              label="Solar-only payback"
-              value={formatYears(results.solarOnlyPayback)}
-              subtitle="Reference only: not allowed above 100 kW"
-              highlight
-            />
-            <ResultCard
-              label="Solar + BESS payback"
-              value={formatYears(results.solarPlusBessPayback)}
-              subtitle={`₹${results.totalCapex.toFixed(2)} Cr total capex`}
-              dark
-            />
-            <ResultCard
-              label="Payback penalty"
-              value={`${results.paybackPenalty !== null ? `${results.paybackPenalty >= 0 ? '+' : ''}${results.paybackPenalty.toFixed(1)} yrs` : 'N/A'}`}
-              subtitle="Cost of the storage mandate"
-            />
-            <ResultCard
-              label="BESS on its own"
-              value={formatYears(results.bessStandalonePayback)}
-              subtitle={currencyCr(results.bessOM)}
-            />
-          </div>
-        </div>
-
         <main className="grid min-w-0 lg:grid-cols-[300px_minmax(0,1fr)]">
-          <div className="order-2 min-w-0 lg:order-1">
+          <div className="order-1 min-w-0 lg:col-start-1 lg:row-span-2 lg:row-start-1">
             <CalculatorSidebar inputs={inputs} onInputChange={updateInput} />
           </div>
 
-          <section className="order-1 min-w-0 bg-[#f1f4f1] p-2 sm:p-3 lg:order-2">
+          <div className="order-2 min-w-0 bg-[#f1f4f1] p-2 sm:p-3 lg:col-start-2 lg:row-start-1">
+            <div className="bg-[#0f7a57] px-3 py-3 text-white">
+              <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2 md:gap-3 xl:grid-cols-4">
+                <ResultCard
+                  label="Solar-only payback"
+                  value={formatYears(results.solarOnlyPayback)}
+                  subtitle="Reference only: not allowed above 100 kW"
+                  highlight
+                />
+                <ResultCard
+                  label="Solar + BESS payback"
+                  value={formatYears(results.solarPlusBessPayback)}
+                  subtitle={`₹${results.totalCapex.toFixed(2)} Cr total capex`}
+                  dark
+                />
+                <ResultCard
+                  label="Payback penalty"
+                  value={`${results.paybackPenalty !== null ? `${results.paybackPenalty >= 0 ? '+' : ''}${results.paybackPenalty.toFixed(1)} yrs` : 'N/A'}`}
+                  subtitle="Cost of the storage mandate"
+                />
+                <ResultCard
+                  label="BESS on its own"
+                  value={formatYears(results.bessStandalonePayback)}
+                  subtitle={currencyCr(results.bessOM)}
+                />
+              </div>
+            </div>
+          </div>
+
+          <section className="order-3 min-w-0 bg-[#f1f4f1] p-2 sm:p-3 lg:col-start-2 lg:row-start-2">
             <div className="space-y-4">
               <div className="grid min-w-0 gap-4 xl:grid-cols-2">
                 <ComplianceCheck
