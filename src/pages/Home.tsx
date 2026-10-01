@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { MessageCircle, Send, X } from 'lucide-react';
 import { CalculatorSidebar } from '../components/CalculatorSidebar';
 import { ResultCard } from '../components/ResultCard';
@@ -11,15 +11,37 @@ import { ReportForm } from '../components/ReportForm';
 import { Footer } from '../components/Footer';
 import { defaultBessAssumptions } from '../lib/bessAssumptions';
 import { calculateBessScenario, defaultBessInputs, type BessInputs } from '../lib/bessCalculator';
+import { CommercialCalculator } from '../components/CommercialCalculator';
+
+const BESS_STORAGE_KEY = 'swid-merc-calculator-v1';
+const MODE_STORAGE_KEY = 'swid-calculator-mode-v1';
+
+function loadBessInputs(): BessInputs {
+  try {
+    const saved = localStorage.getItem(BESS_STORAGE_KEY);
+    return saved ? { ...defaultBessInputs, ...JSON.parse(saved) as Partial<BessInputs> } : defaultBessInputs;
+  } catch {
+    return defaultBessInputs;
+  }
+}
 
 const currencyCr = (value: number) => `₹${value.toFixed(2)} Cr`;
 const formatYears = (value: number | null) => (value === null ? 'N/A' : `${value.toFixed(1)} yrs`);
 
 export default function Home() {
-  const [inputs, setInputs] = useState<BessInputs>(defaultBessInputs);
+  const [inputs, setInputs] = useState<BessInputs>(loadBessInputs);
+  const [activeMode, setActiveMode] = useState<'merc' | 'commercial'>(() => {
+    try { return localStorage.getItem(MODE_STORAGE_KEY) === 'commercial' ? 'commercial' : 'merc'; } catch { return 'merc'; }
+  });
   const [chatOpen, setChatOpen] = useState(false);
   const results = useMemo(() => calculateBessScenario(inputs, defaultBessAssumptions), [inputs]);
   const showDebug = import.meta.env.DEV;
+  useEffect(() => {
+    try { localStorage.setItem(BESS_STORAGE_KEY, JSON.stringify(inputs)); } catch { /* storage may be disabled */ }
+  }, [inputs]);
+  useEffect(() => {
+    try { localStorage.setItem(MODE_STORAGE_KEY, activeMode); } catch { /* storage may be disabled */ }
+  }, [activeMode]);
   const bankingDisplay = inputs.solarCapacityMW < 1
     ? { sizeBand: '500 kW - 1 MW', monthlySlots: '8', capPerSlot: 'None', sunset: 'None', slotWord: 'Eight' }
     : inputs.solarCapacityMW <= 5
@@ -30,13 +52,17 @@ export default function Home() {
     setInputs((previous) => ({ ...previous, [field]: value }));
   };
 
+  if (activeMode === 'commercial') {
+    return <CommercialCalculator onModeChange={setActiveMode} />;
+  }
+
   return (
     <div className="min-h-screen bg-[#dfe9e2] px-2 py-2 text-[#112b25] sm:px-3 sm:py-4 md:px-5">
       <div className="mx-auto max-w-[1760px] overflow-hidden border border-[#bfd0c3] bg-[#f4f4f2] shadow-[0_10px_25px_rgba(15,23,42,0.08)]">
         <Header />
 
         <div className="bg-[#edf7ef] px-4 pb-3 pt-2">
-          <div className="flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
+            <div className="flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
             <div className="min-w-0">
               <div className="mb-2 text-[9px] font-bold uppercase tracking-[0.2em] text-[#0f5e47]">
                 SWID ENERGY SOLUTIONS · REGULATORY IMPACT CALCULATOR
@@ -52,6 +78,10 @@ export default function Home() {
             <div className="rounded-[4px] border border-[#bfe0ca] bg-[#ecf8f1] px-2 py-1.5 text-left text-[10px] font-bold uppercase tracking-[0.14em] text-[#0f5e47] sm:mt-1 sm:text-right">
               <div>MERC DRAFT · 22 SEP 2026</div>
               <div className="mt-1 text-[9px] normal-case tracking-[0] text-[#4f675f]">Public comments close 15 Oct 2026</div>
+            </div>
+            <div className="mt-4 flex gap-2" role="group" aria-label="Calculator mode">
+              <button type="button" aria-current="page" className="rounded-md bg-white px-3 py-2 text-xs font-bold text-emerald-800 shadow-sm">MERC draft model</button>
+              <button type="button" onClick={() => setActiveMode('commercial')} className="rounded-md border border-[#b7d5c3] bg-transparent px-3 py-2 text-xs font-semibold text-[#285844] hover:bg-white/70">Solar + BESS commercial model</button>
             </div>
           </div>
         </div>
@@ -166,7 +196,11 @@ export default function Home() {
                     <div>Total capex: ₹{results.totalCapex.toFixed(2)} Cr</div>
                     <div>Storage requirement: {results.requiredStorage.toFixed(2)} MWh ({results.complianceStatus ? 'Compliant' : 'Not compliant'})</div>
                     <div>Transformer allowed rooftop: {results.allowedRooftopCumulative.toFixed(2)} MW</div>
-                    <div>Transformer overage: {results.transformerHeadroom.toFixed(2)} MW</div>
+                    <div>
+                      {results.transformerHeadroom > 0
+                        ? `Transformer overage: ${results.transformerHeadroom.toFixed(2)} MW`
+                        : `Transformer headroom remaining: ${Math.abs(results.transformerHeadroom).toFixed(2)} MW`}
+                    </div>
                     <div>Project ROI: {results.roi.toFixed(1)}%</div>
                   </div>
                 </div>

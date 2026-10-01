@@ -64,7 +64,7 @@ export function CalculatorSidebar({ inputs, onInputChange }: CalculatorSidebarPr
                 min={slider.min}
                 max={slider.max}
                 step={slider.step}
-                suffix={slider.suffix}
+                suffix={'suffix' in slider ? slider.suffix : undefined}
                 onChange={(value) => onInputChange(slider.field as keyof BessInputs, value as never)}
               />
             ))}
@@ -82,7 +82,7 @@ export function CalculatorSidebar({ inputs, onInputChange }: CalculatorSidebarPr
                 min={slider.min}
                 max={slider.max}
                 step={slider.step}
-                suffix={slider.suffix}
+                suffix={'suffix' in slider ? slider.suffix : undefined}
                 onChange={(value) => onInputChange(slider.field as keyof BessInputs, value as never)}
               />
             ))}
@@ -100,7 +100,7 @@ export function CalculatorSidebar({ inputs, onInputChange }: CalculatorSidebarPr
                 min={slider.min}
                 max={slider.max}
                 step={slider.step}
-                suffix={slider.suffix}
+                suffix={'suffix' in slider ? slider.suffix : undefined}
                 onChange={(value) => onInputChange(slider.field as keyof BessInputs, value as never)}
               />
             ))}
