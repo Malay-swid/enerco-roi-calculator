@@ -26,6 +26,7 @@ function loadSavedInputs(): CommercialInputs {
     if (!compatibleStructures(merged.projectType).includes(merged.commercialStructure)) {
       merged.commercialStructure = compatibleStructures(merged.projectType)[0];
     }
+    merged.wheelingTransmissionPerKwh = merged.projectType === 'open_access' ? 1.95 : 0;
     return merged;
   } catch {
     return defaultCommercialInputs;
@@ -49,7 +50,7 @@ function downloadExcel(inputs: CommercialInputs, results: ReturnType<typeof calc
     ['Peak tariff (₹/kWh)', inputs.peakTariff],
     ['Applicable banking + standby (₹/kW/month)', results.applicableBankingStandbyPerKwMonth],
     ['Banking + standby (₹/kWh)', results.bankingStandbyPerKwh],
-    ['Applicable wheeling + transmission (₹/kWh)', results.applicableWheelingTransmissionPerKwh],
+    ['Wheeling & transmission charge (₹/kWh)', results.applicableWheelingTransmissionPerKwh],
     ['Commercial structure', inputs.commercialStructure],
     ['Solar CAPEX (₹/kWp)', inputs.solarCapexPerKwp],
     ['BESS CAPEX (₹/kWh)', inputs.bessCapexPerKwh],
@@ -193,7 +194,8 @@ export function CommercialCalculator({ onModeChange }: { onModeChange: (mode: 'm
   };
   const changeProjectType = (projectType: ProjectType) => {
     const commercialStructure = compatibleStructures(projectType)[0];
-    setInputs((previous) => ({ ...previous, projectType, commercialStructure }));
+    const wheelingTransmissionPerKwh = projectType === 'open_access' ? 1.95 : 0;
+    setInputs((previous) => ({ ...previous, projectType, commercialStructure, wheelingTransmissionPerKwh }));
     setSaved(false);
   };
   const changeMeter = (meter: MeterType) => {
@@ -227,29 +229,55 @@ export function CommercialCalculator({ onModeChange }: { onModeChange: (mode: 'm
               <NumericField label="Specific yield" unit="kWh/kWp/year" value={inputs.specificYield} min={1200} max={1800} step={10} onChange={(value) => update('specificYield', value)} error={errors.specificYield} slider />
               <SelectField label="BESS sizing" value={inputs.bessDuration} onChange={(value) => update('bessDuration', value as CommercialInputs['bessDuration'])} options={[["1", "1 Hour"], ["2", "2 Hour"], ["3", "3 Hour"], ["4", "4 Hour"], ["custom", "Custom"]]} />
               {inputs.bessDuration === 'custom' ? <NumericField label="Custom BESS capacity" unit="kWh" value={inputs.customBessCapacityKwh} step={1} onChange={(value) => update('customBessCapacityKwh', value)} error={errors.customBessCapacityKwh} /> : null}
-              <div className="rounded-xl bg-sky-50 px-4 py-3"><div className="text-xs font-semibold uppercase tracking-wide text-sky-800">BESS configuration</div><div className="mt-1 text-xl font-extrabold text-sky-950">{number(results.bessCapacityKwh, 1)} kWh</div><div className="mt-1 text-xs text-sky-800">{number(results.bessDurationHours, 2)} hour duration</div></div>
+              <div className="rounded-xl bg-sky-50 px-4 py-3"><div className="text-xs font-semibold uppercase tracking-wide text-sky-800">BESS configuration</div><div className="mt-1 text-xl font-extrabold text-sky-950">{number(results.bessCapacityKwh, 1)} kWh</div><div className="mt-1 text-xs text-sky-800">{inputs.bessDuration === 'custom' ? `Custom capacity · ${number(results.bessDurationHours, 2)} hour equivalent` : `50% of AC capacity for ${inputs.bessDuration} selected ${inputs.bessDuration === '1' ? 'hour' : 'hours'}`}</div></div>
             </div>
           </Card>
 
           <Card title="Tariffs & charges">
             <div className="grid gap-4 sm:grid-cols-2">
               <SelectField label="Meter" value={inputs.meter} onChange={(value) => changeMeter(value as MeterType)} options={[["ht_commercial", "HT - Commercial"], ["ht_industrial", "HT - Industrial"]]} />
-              <SelectField label="Commercial structure" value={inputs.commercialStructure} onChange={(value) => update('commercialStructure', value as CommercialStructure)} options={compatibleStructures(inputs.projectType).map((value) => [value, ({ capex: 'CAPEX', opex: 'OPEX', group_captive: 'Group Captive', captive: 'Captive' } as Record<string, string>)[value]])} />
               <NumericField label="Landed grid off-peak tariff" unit="₹/kWh" value={inputs.offPeakTariff} step={0.01} onChange={(value) => update('offPeakTariff', value)} error={errors.offPeakTariff} />
               <NumericField label="Landed grid peak tariff" unit="₹/kWh" value={inputs.peakTariff} step={0.01} onChange={(value) => update('peakTariff', value)} error={errors.peakTariff} />
-              <NumericField label="Banking + standby charge" unit="₹/kW/month" value={inputs.bankingStandbyPerKwMonth} step={1} onChange={(value) => update('bankingStandbyPerKwMonth', value)} error={errors.bankingStandbyPerKwMonth} hint={inputs.projectType === 'open_access' ? 'Not applied for Open Access.' : undefined} />
-              <div className="rounded-xl bg-slate-50 px-4 py-3"><div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Applicable banking charge</div><div className="mt-1 text-lg font-bold text-slate-900">₹{number(results.bankingStandbyPerKwh, 2)}<span className="ml-1 text-xs font-medium text-slate-500">/kWh</span></div></div>
-              <NumericField label="Wheeling & transmission" unit="₹/kWh" value={inputs.wheelingTransmissionPerKwh} step={0.01} onChange={(value) => update('wheelingTransmissionPerKwh', value)} error={errors.wheelingTransmissionPerKwh} hint={inputs.projectType === 'rooftop_btm' ? 'Not applied for Rooftop / BTM.' : undefined} />
-              <div className="rounded-xl bg-slate-50 px-4 py-3"><div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Applicable wheeling charges</div><div className="mt-1 text-lg font-bold text-slate-900">₹{number(results.applicableWheelingTransmissionPerKwh, 2)}<span className="ml-1 text-xs font-medium text-slate-500">/kWh</span></div></div>
+              {inputs.projectType === 'open_access' ? (
+                <label className="block text-sm font-medium text-slate-700">Banking + standby charge
+                  <div className="mt-1.5 flex overflow-hidden rounded-lg border border-emerald-200 bg-emerald-50">
+                    <input type="number" readOnly value={0} className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none" />
+                    <span className="flex items-center border-l border-emerald-200 bg-white/60 px-3 text-xs text-slate-500">₹/kW/month</span>
+                  </div>
+                  <span className="mt-1 block text-xs font-normal text-slate-500">Not applied for Open Access</span>
+                </label>
+              ) : (
+                <NumericField label="Banking + standby charge" unit="₹/kW/month" value={inputs.bankingStandbyPerKwMonth} step={1} onChange={(value) => update('bankingStandbyPerKwMonth', value)} error={errors.bankingStandbyPerKwMonth} />
+              )}
+              <label className="block text-sm font-medium text-slate-700">Wheeling & transmission
+                <div className="mt-1.5 flex overflow-hidden rounded-lg border border-emerald-200 bg-emerald-50">
+                  <input type="number" readOnly value={inputs.wheelingTransmissionPerKwh} className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none" />
+                  <span className="flex items-center border-l border-emerald-200 bg-white/60 px-3 text-xs text-slate-500">₹/kWh</span>
+                </div>
+                <span className="mt-1 block text-xs font-normal text-slate-500">Set automatically from project type</span>
+              </label>
             </div>
           </Card>
 
           <Card title="Investment" icon={<IndianRupee className="h-5 w-5 text-emerald-700" />}>
+            <label className="mb-5 block text-sm font-medium text-slate-700">
+              Commercial structure
+              <select
+                className="mt-2 w-full rounded-xl border-2 border-emerald-700 bg-white px-4 py-3 text-lg text-slate-900 shadow-[0_0_0_4px_#d1fae5] outline-none focus:ring-2 focus:ring-emerald-200"
+                value={inputs.commercialStructure}
+                onChange={(event) => update('commercialStructure', event.target.value as CommercialStructure)}
+              >
+                {compatibleStructures(inputs.projectType).map((value) => (
+                  <option key={value} value={value}>{({ capex: 'CAPEX', opex: 'OPEX', group_captive: 'Group Captive', captive: 'Captive' } as Record<string, string>)[value]}</option>
+                ))}
+              </select>
+            </label>
             <div className="grid gap-4 sm:grid-cols-2">
               <NumericField label="Solar CAPEX" unit="₹/kWp" value={inputs.solarCapexPerKwp} min={25000} max={50000} step={500} onChange={(value) => update('solarCapexPerKwp', value)} error={errors.solarCapexPerKwp} slider />
               <NumericField label="BESS CAPEX" unit="₹/kWh" value={inputs.bessCapexPerKwh} min={12000} max={23000} step={500} onChange={(value) => update('bessCapexPerKwh', value)} error={errors.bessCapexPerKwh} slider />
             </div>
             <div className="mt-5 grid gap-3 sm:grid-cols-3"><div className="rounded-xl bg-slate-50 p-4"><p className="text-xs text-slate-500">Solar investment</p><p className="mt-1 text-lg font-bold">{money(results.solarInvestment)}</p></div><div className="rounded-xl bg-slate-50 p-4"><p className="text-xs text-slate-500">BESS investment</p><p className="mt-1 text-lg font-bold">{money(results.bessInvestment)}</p></div><div className="rounded-xl bg-emerald-50 p-4"><p className="text-xs text-emerald-800">Total investment</p><p className="mt-1 text-lg font-extrabold text-emerald-950">{money(results.totalInvestment)}</p></div></div>
+            <div className="mt-4 rounded-xl bg-emerald-300 p-4 text-emerald-950"><div className="text-xs font-bold uppercase tracking-wide">Out-of-pocket investment</div><div className="mt-1 text-2xl font-black">{money(results.outOfPocketInvestment)}</div><div className="mt-1 text-xs">{inputs.commercialStructure.replace('_', ' ')} structure</div></div>
           </Card>
 
           <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -264,10 +292,9 @@ export function CommercialCalculator({ onModeChange }: { onModeChange: (mode: 'm
         </div>
 
         <aside className="space-y-5 lg:sticky lg:top-5">
-          <section className="overflow-hidden rounded-2xl bg-[#103f32] text-white shadow-lg"><div className="border-b border-white/10 px-5 py-5 sm:px-6"><div className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-200">Live project summary</div><h2 className="mt-1 text-xl font-extrabold">Results dashboard</h2></div><div className="grid grid-cols-2 gap-3 p-4 sm:p-5"><div className="rounded-xl bg-white/10 p-4"><div className="text-xs text-emerald-100">Solar DC</div><div className="mt-1 text-xl font-extrabold">{number(inputs.solarDcCapacityKwp, 1)}</div><div className="text-xs text-emerald-100">kWp</div></div><div className="rounded-xl bg-white/10 p-4"><div className="text-xs text-emerald-100">Solar AC</div><div className="mt-1 text-xl font-extrabold">{number(results.solarAcCapacityKw, 1)}</div><div className="text-xs text-emerald-100">kW</div></div><div className="rounded-xl bg-white/10 p-4"><div className="text-xs text-emerald-100">Annual generation</div><div className="mt-1 text-xl font-extrabold">{number(results.annualSolarGenerationKwh / 1000000, 2)}</div><div className="text-xs text-emerald-100">GWh/year</div></div><div className="rounded-xl bg-white/10 p-4"><div className="text-xs text-emerald-100">BESS</div><div className="mt-1 text-xl font-extrabold">{number(results.bessCapacityKwh, 1)}</div><div className="text-xs text-emerald-100">kWh · {number(results.bessDurationHours, 1)} hour</div></div></div><div className="mx-4 mb-4 rounded-xl bg-emerald-300 p-4 text-emerald-950 sm:mx-5 sm:mb-5"><div className="text-xs font-bold uppercase tracking-wide">Out-of-pocket investment</div><div className="mt-1 text-2xl font-black">{money(results.outOfPocketInvestment)}</div><div className="mt-1 text-xs">{inputs.commercialStructure.replace('_', ' ')} structure</div></div>
+          <section className="overflow-hidden rounded-2xl bg-[#103f32] text-white shadow-lg"><div className="border-b border-white/10 px-5 py-5 sm:px-6"><div className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-200">Live project summary</div><h2 className="mt-1 text-xl font-extrabold">Results dashboard</h2></div><div className="grid grid-cols-2 gap-3 p-4 sm:p-5"><div className="rounded-xl bg-white/10 p-4"><div className="text-xs text-emerald-100">Solar DC</div><div className="mt-1 text-xl font-extrabold">{number(inputs.solarDcCapacityKwp, 1)}</div><div className="text-xs text-emerald-100">kWp</div></div><div className="rounded-xl bg-white/10 p-4"><div className="text-xs text-emerald-100">Solar AC</div><div className="mt-1 text-xl font-extrabold">{number(results.solarAcCapacityKw, 1)}</div><div className="text-xs text-emerald-100">kW</div></div><div className="rounded-xl bg-white/10 p-4"><div className="text-xs text-emerald-100">Annual generation</div><div className="mt-1 text-xl font-extrabold">{number(results.annualSolarGenerationKwh / 1000000, 2)}</div><div className="text-xs text-emerald-100">GWh/year</div></div><div className="rounded-xl bg-white/10 p-4"><div className="text-xs text-emerald-100">BESS</div><div className="mt-1 text-xl font-extrabold">{number(results.bessCapacityKwh, 1)}</div><div className="text-xs text-emerald-100">kWh · {number(results.bessDurationHours, 1)} hour</div></div></div>
             <div className="px-5 pb-5 sm:px-6"><div className="mb-2 text-xs font-bold uppercase tracking-wide text-emerald-100">Investment breakdown</div><Output label="Solar investment" value={money(results.solarInvestment)} /><Output label="BESS investment" value={money(results.bessInvestment)} /><Output label="Total project investment" value={money(results.totalInvestment)} strong /></div>
           </section>
-          <Card title="Tariff snapshot"><Output label="Peak grid tariff" value={`₹${number(inputs.peakTariff, 2)}`} unit="/kWh" /><Output label="Off-peak grid tariff" value={`₹${number(inputs.offPeakTariff, 2)}`} unit="/kWh" /><Output label="Applicable wheeling charges" value={`₹${number(results.applicableWheelingTransmissionPerKwh, 2)}`} unit="/kWh" /><Output label="Applicable banking charge" value={`₹${number(results.bankingStandbyPerKwh, 2)}`} unit="/kWh" /></Card>
           <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5"><h2 className="font-bold text-amber-950">Savings and payback not calculated</h2><p className="mt-2 text-sm leading-6 text-amber-900">Peak-shift dispatch and charge allocation are not fully defined, so annual savings, payback, ROI, and long-term cash flows are withheld to avoid presenting an unsupported estimate.</p></div>
           {hasErrors ? <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-800">Correct the highlighted inputs before relying on the displayed results or exports.</div> : null}
         </aside>

@@ -60,7 +60,7 @@ export const defaultCommercialInputs: CommercialInputs = {
   offPeakTariff: 12.8,
   peakTariff: 20.8,
   bankingStandbyPerKwMonth: 130,
-  wheelingTransmissionPerKwh: 1.95,
+  wheelingTransmissionPerKwh: 0,
   commercialStructure: 'capex',
   solarCapexPerKwp: 33000,
   bessCapexPerKwh: 18000,
@@ -94,7 +94,7 @@ export function calculateCommercialScenario(inputs: CommercialInputs): Commercia
   const multiplier = inputs.bessDuration === 'custom' ? 0 : Number(inputs.bessDuration);
   const bessCapacityKwh = inputs.bessDuration === 'custom'
     ? nonNegative(inputs.customBessCapacityKwh)
-    : solarAcCapacityKw * (Number.isFinite(multiplier) ? multiplier : 1);
+    : solarAcCapacityKw * (Number.isFinite(multiplier) ? multiplier : 1) / 2;
   const annualSolarGenerationKwh = dc * yieldValue;
   const excessSolarKwh = annualSolarGenerationKwh * clampPercent(inputs.solarExcessPercent) / 100;
   const daytimeLoadOffsetKwh = annualSolarGenerationKwh - excessSolarKwh;
