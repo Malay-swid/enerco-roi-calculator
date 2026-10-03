@@ -10,10 +10,10 @@ interface ResultCardProps {
 
 export function ResultCard({ label, value, subtitle, highlight = false, dark = false }: ResultCardProps) {
   const base = dark
-    ? 'border border-[#14a969] bg-[#0f8b5c] text-white'
+    ? 'border border-[#0f61ab] bg-[#0f61ab] text-white'
     : highlight
-      ? 'border border-[#9adab7] bg-[#ebf9f1] text-[#163d2d]'
-      : 'border border-[#dfe7df] bg-white text-[#163d2d]';
+      ? 'border border-[#9fc5e8] bg-[#e8f2fb] text-[#16324a]'
+      : 'border border-[#dfe8f1] bg-white text-[#16324a]';
 
   return (
     <div className={`rounded-[4px] p-3 ${base}`}>

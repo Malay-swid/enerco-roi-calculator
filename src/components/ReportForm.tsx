@@ -54,14 +54,14 @@ export function ReportForm() {
   };
 
   return (
-    <div id="report-form" className="grid gap-4 rounded-[6px] border border-[#dbe3db] bg-white p-4 lg:grid-cols-[1fr_1fr]">
+    <div id="report-form" className="grid gap-4 rounded-[6px] border border-[#dbe5ef] bg-white p-4 lg:grid-cols-[1fr_1fr]">
       <div className="space-y-3">
-        <div className="flex items-center gap-2 text-[#173d32]">
+        <div className="flex items-center gap-2 text-[#16324a]">
           <span className="text-[9px] font-bold uppercase tracking-[0.18em]">Free · Independent</span>
         </div>
-        <h2 className="text-[22px] font-black leading-tight text-[#173d32]">Get the full report for your plant</h2>
-        <p className="text-[12px] text-[#4c5d57]">We&apos;ll run your scenario properly and send you:</p>
-        <ul className="space-y-1 text-[12px] text-[#4c5d57]">
+        <h2 className="text-[22px] font-black leading-tight text-[#16324a]">Get the full report for your plant</h2>
+        <p className="text-[12px] text-[#526273]">We&apos;ll run your scenario properly and send you:</p>
+        <ul className="space-y-1 text-[12px] text-[#526273]">
           <li>• 15-year cash flow, IRR and payback</li>
           <li>• Best-fit ESS size and dispatch strategy</li>
           <li>• Month-by-month banking exposure</li>
@@ -73,7 +73,7 @@ export function ReportForm() {
         <div className="grid gap-2 sm:grid-cols-2">
           <div>
             <input
-              className="w-full rounded-[4px] border border-[#dfe4df] bg-[#f9faf9] px-2.5 py-2 text-[12px] outline-none"
+              className="w-full rounded-[4px] border border-[#dfe8f1] bg-[#f8fafc] px-2.5 py-2 text-[12px] outline-none"
               placeholder="Full name"
               value={form.fullName}
               onChange={(event) => updateField('fullName', event.target.value)}
@@ -82,7 +82,7 @@ export function ReportForm() {
           </div>
           <div>
             <input
-              className="w-full rounded-[4px] border border-[#dfe4df] bg-[#f9faf9] px-2.5 py-2 text-[12px] outline-none"
+              className="w-full rounded-[4px] border border-[#dfe8f1] bg-[#f8fafc] px-2.5 py-2 text-[12px] outline-none"
               placeholder="Company"
               value={form.company}
               onChange={(event) => updateField('company', event.target.value)}
@@ -93,7 +93,7 @@ export function ReportForm() {
         <div className="grid gap-2 sm:grid-cols-2">
           <div>
             <input
-              className="w-full rounded-[4px] border border-[#dfe4df] bg-[#f9faf9] px-2.5 py-2 text-[12px] outline-none"
+              className="w-full rounded-[4px] border border-[#dfe8f1] bg-[#f8fafc] px-2.5 py-2 text-[12px] outline-none"
               placeholder="Work email"
               type="email"
               value={form.email}
@@ -103,7 +103,7 @@ export function ReportForm() {
           </div>
           <div>
             <input
-              className="w-full rounded-[4px] border border-[#dfe4df] bg-[#f9faf9] px-2.5 py-2 text-[12px] outline-none"
+              className="w-full rounded-[4px] border border-[#dfe8f1] bg-[#f8fafc] px-2.5 py-2 text-[12px] outline-none"
               placeholder="Phone"
               value={form.phone}
               onChange={(event) => updateField('phone', event.target.value)}
@@ -114,33 +114,33 @@ export function ReportForm() {
 
         <div className="grid gap-2 sm:grid-cols-2">
           <input
-            className="w-full rounded-[4px] border border-[#dfe4df] bg-[#f9faf9] px-2.5 py-2 text-[12px] outline-none"
+            className="w-full rounded-[4px] border border-[#dfe8f1] bg-[#f8fafc] px-2.5 py-2 text-[12px] outline-none"
             placeholder="Plant location"
             value={form.plantLocation}
             onChange={(event) => updateField('plantLocation', event.target.value)}
           />
           <input
-            className="w-full rounded-[4px] border border-[#dfe4df] bg-[#f9faf9] px-2.5 py-2 text-[12px] outline-none"
+            className="w-full rounded-[4px] border border-[#dfe8f1] bg-[#f8fafc] px-2.5 py-2 text-[12px] outline-none"
             placeholder="Annual consumption (optional)"
             value={form.annualConsumption}
             onChange={(event) => updateField('annualConsumption', event.target.value)}
           />
         </div>
 
-        <label className="flex items-start gap-2 text-[10px] text-[#586f66]">
+        <label className="flex items-start gap-2 text-[10px] text-[#64748b]">
           <input
             type="checkbox"
             checked={form.consent}
             onChange={(event) => updateField('consent', event.target.checked)}
-            className="mt-0.5 h-4 w-4 rounded border-[#c9d5ce] text-[#0f7a57]"
+            className="mt-0.5 h-4 w-4 rounded border-[#c9d8e7] text-[#0f61ab]"
           />
           I agree to SWID contacting me about this report. We don&apos;t share your details with vendors.
         </label>
         {errors.consent ? <div className="text-[10px] text-red-600">{errors.consent}</div> : null}
 
-        {submitted ? <div className="text-[10px] font-semibold text-green-700">Your report request was submitted successfully.</div> : null}
+        {submitted ? <div className="text-[10px] font-semibold text-brand-700">Your report request was submitted successfully.</div> : null}
 
-        <button type="submit" className="w-full rounded-[4px] bg-[#17a568] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-white shadow-[0_4px_12px_rgba(23,165,104,0.25)] transition hover:bg-[#128c5d]">
+        <button type="submit" className="w-full rounded-[4px] bg-[#0f61ab] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-white shadow-[0_4px_12px_rgba(15,97,171,0.25)] transition hover:bg-[#0b4f8b]">
           Send me the full report
         </button>
       </form>

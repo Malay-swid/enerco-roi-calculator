@@ -27,10 +27,10 @@ const sliderFields = [
 
 export function CalculatorSidebar({ inputs, onInputChange }: CalculatorSidebarProps) {
   return (
-    <aside className="border-b border-[#d8e0d7] bg-[#f7f7f5] p-3 lg:border-b-0 lg:border-r">
+    <aside className="border-b border-[#d8e2ed] bg-[#f7f8fa] p-3 lg:border-b-0 lg:border-r">
       <div className="space-y-4">
         <div>
-          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#586f66]">ESS sizing option</div>
+          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#64748b]">ESS sizing option</div>
           <OptionToggle
             items={[
               { label: '50% × 2 h', helper: 'Higher power, demand relief', value: '50_2' },
@@ -42,7 +42,7 @@ export function CalculatorSidebar({ inputs, onInputChange }: CalculatorSidebarPr
         </div>
 
         <div>
-          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#586f66]">Application window</div>
+          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#64748b]">Application window</div>
           <OptionToggle
             items={[
               { label: 'Up to 2030', helper: 'Floor 1 MWh / MW', value: 'up_to_2030' },
@@ -54,7 +54,7 @@ export function CalculatorSidebar({ inputs, onInputChange }: CalculatorSidebarPr
         </div>
 
         <div>
-          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#586f66]">Project</div>
+          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#64748b]">Project</div>
           <div className="space-y-3">
             {sliderFields.slice(0, 4).map((slider) => (
               <SliderInput
@@ -72,7 +72,7 @@ export function CalculatorSidebar({ inputs, onInputChange }: CalculatorSidebarPr
         </div>
 
         <div>
-          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#586f66]">Tariff & banking</div>
+          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#64748b]">Tariff & banking</div>
           <div className="space-y-3">
             {sliderFields.slice(4, 8).map((slider) => (
               <SliderInput
@@ -90,7 +90,7 @@ export function CalculatorSidebar({ inputs, onInputChange }: CalculatorSidebarPr
         </div>
 
         <div>
-          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#586f66]">Storage</div>
+          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#64748b]">Storage</div>
           <div className="space-y-3">
             {sliderFields.slice(8).map((slider) => (
               <SliderInput

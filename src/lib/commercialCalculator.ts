@@ -4,10 +4,11 @@ export type CommercialStructure = 'capex' | 'opex' | 'group_captive' | 'captive'
 export type BessDuration = '1' | '2' | '3' | '4' | 'custom';
 
 export interface CommercialInputs {
-  projectType: ProjectType;
+  projectType: ProjectType | null;
   solarDcCapacityKwp: number;
   dcRatio: number;
-  specificYield: number;
+  rooftopGenerationKwhPerKwp: number;
+  openAccessGenerationKwhPerKwp: number;
   bessDuration: BessDuration;
   customBessCapacityKwh: number;
   meter: MeterType;
@@ -20,6 +21,10 @@ export interface CommercialInputs {
   bessCapexPerKwh: number;
   solarExcessPercent: number;
   excessLostToSlotLimitsPercent: number;
+  solarDegradationPercent: number;
+  bessDegradationPercent: number;
+  transmissionWheelingLossPercent: number;
+  tariffEscalationPercent: number;
   roundTripEfficiencyPercent: number;
   depthOfDischargePercent: number;
   annualBessCycles: number;
@@ -28,6 +33,11 @@ export interface CommercialInputs {
   gridCharging: boolean;
 }
 
+export type ReadyCommercialInputs = CommercialInputs & {
+  projectType: ProjectType;
+  solarDcCapacityKwp: number;
+};
+
 export interface CommercialResults {
   solarAcCapacityKw: number;
   recommendedAcCapacityKw: number;
@@ -35,6 +45,7 @@ export interface CommercialResults {
   bessDurationHours: number;
   annualSolarGenerationKwh: number;
   daytimeLoadOffsetKwh: number;
+  annualNightTimeLoadOffsetKwh: number;
   excessSolarKwh: number;
   excessSolarLostKwh: number;
   usableSolarKwh: number;
@@ -50,11 +61,12 @@ export interface CommercialResults {
 }
 
 export const defaultCommercialInputs: CommercialInputs = {
-  projectType: 'rooftop_btm',
-  solarDcCapacityKwp: 1000,
+  projectType: null,
+  solarDcCapacityKwp: Number.NaN,
   dcRatio: 1.25,
-  specificYield: 1400,
-  bessDuration: '1',
+  rooftopGenerationKwhPerKwp: 1400,
+  openAccessGenerationKwhPerKwp: 1600,
+  bessDuration: '2',
   customBessCapacityKwh: 800,
   meter: 'ht_commercial',
   offPeakTariff: 12.8,
@@ -66,9 +78,13 @@ export const defaultCommercialInputs: CommercialInputs = {
   bessCapexPerKwh: 18000,
   solarExcessPercent: 60,
   excessLostToSlotLimitsPercent: 100,
-  roundTripEfficiencyPercent: 90,
+  solarDegradationPercent: 0.6,
+  bessDegradationPercent: 1,
+  transmissionWheelingLossPercent: 11,
+  tariffEscalationPercent: 1,
+  roundTripEfficiencyPercent: 87.9844,
   depthOfDischargePercent: 90,
-  annualBessCycles: 300,
+  annualBessCycles: 365,
   peakShifting: true,
   solarCharging: true,
   gridCharging: false,
@@ -82,14 +98,22 @@ export const meterTariffDefaults: Record<MeterType, { offPeak: number; peak: num
 export const compatibleStructures = (projectType: ProjectType): CommercialStructure[] =>
   projectType === 'open_access' ? ['group_captive', 'captive'] : ['capex', 'opex'];
 
+export function hasRequiredCommercialInputs(inputs: CommercialInputs): inputs is ReadyCommercialInputs {
+  return inputs.projectType !== null
+    && Number.isFinite(inputs.solarDcCapacityKwp)
+    && inputs.solarDcCapacityKwp >= 0;
+}
+
 const safe = (value: number, fallback = 0) => Number.isFinite(value) ? value : fallback;
 const nonNegative = (value: number) => Math.max(0, safe(value));
 const clampPercent = (value: number) => Math.min(100, nonNegative(value));
 
-export function calculateCommercialScenario(inputs: CommercialInputs): CommercialResults {
+export function calculateCommercialScenario(inputs: ReadyCommercialInputs): CommercialResults {
   const dc = nonNegative(inputs.solarDcCapacityKwp);
   const ratio = Math.max(0.01, safe(inputs.dcRatio, 1.25));
-  const yieldValue = nonNegative(inputs.specificYield);
+  const yieldValue = nonNegative(inputs.projectType === 'open_access'
+    ? inputs.openAccessGenerationKwhPerKwp
+    : inputs.rooftopGenerationKwhPerKwp);
   const solarAcCapacityKw = dc / ratio;
   const multiplier = inputs.bessDuration === 'custom' ? 0 : Number(inputs.bessDuration);
   const bessCapacityKwh = inputs.bessDuration === 'custom'
@@ -97,7 +121,23 @@ export function calculateCommercialScenario(inputs: CommercialInputs): Commercia
     : solarAcCapacityKw * (Number.isFinite(multiplier) ? multiplier : 1) / 2;
   const annualSolarGenerationKwh = dc * yieldValue;
   const excessSolarKwh = annualSolarGenerationKwh * clampPercent(inputs.solarExcessPercent) / 100;
-  const daytimeLoadOffsetKwh = annualSolarGenerationKwh - excessSolarKwh;
+  const dischargeEfficiency = Math.sqrt(clampPercent(inputs.roundTripEfficiencyPercent) / 100);
+  const annualBessCycles = nonNegative(inputs.annualBessCycles);
+  const annualChargeEnergyKwh = dischargeEfficiency > 0
+    ? bessCapacityKwh
+      * clampPercent(inputs.depthOfDischargePercent) / 100
+      / dischargeEfficiency
+      * annualBessCycles
+    : 0;
+  const generationAfterApplicableLosses = annualSolarGenerationKwh
+    * (inputs.projectType === 'open_access'
+      ? 1 - clampPercent(inputs.transmissionWheelingLossPercent) / 100
+      : 1);
+  const daytimeLoadOffsetKwh = generationAfterApplicableLosses - annualChargeEnergyKwh;
+  const annualNightTimeLoadOffsetKwh = bessCapacityKwh
+    * clampPercent(inputs.depthOfDischargePercent) / 100
+    * dischargeEfficiency
+    * annualBessCycles;
   const excessSolarLostKwh = excessSolarKwh * clampPercent(inputs.excessLostToSlotLimitsPercent) / 100;
   const usableSolarKwh = annualSolarGenerationKwh - excessSolarLostKwh;
   const applicableBankingStandbyPerKwMonth = inputs.projectType === 'rooftop_btm'
@@ -128,6 +168,7 @@ export function calculateCommercialScenario(inputs: CommercialInputs): Commercia
     bessDurationHours: solarAcCapacityKw > 0 ? bessCapacityKwh / solarAcCapacityKw : 0,
     annualSolarGenerationKwh,
     daytimeLoadOffsetKwh,
+    annualNightTimeLoadOffsetKwh,
     excessSolarKwh,
     excessSolarLostKwh,
     usableSolarKwh,
@@ -139,7 +180,7 @@ export function calculateCommercialScenario(inputs: CommercialInputs): Commercia
     totalInvestment,
     outOfPocketInvestment: totalInvestment * outOfPocketFactor[inputs.commercialStructure],
     usableBessEnergyKwh,
-    annualBessThroughputKwh: usableBessEnergyKwh * nonNegative(inputs.annualBessCycles),
+    annualBessThroughputKwh: usableBessEnergyKwh * annualBessCycles,
   };
 }
 
@@ -150,9 +191,12 @@ export function validateCommercialInputs(inputs: CommercialInputs): Partial<Reco
       errors[key] = `${label} must be ${max === undefined ? `at least ${min}` : `between ${min} and ${max}`}.`;
     }
   };
-  check('solarDcCapacityKwp', 'Solar DC capacity', inputs.solarDcCapacityKwp, 0);
+  if (Number.isFinite(inputs.solarDcCapacityKwp)) {
+    check('solarDcCapacityKwp', 'Solar DC capacity', inputs.solarDcCapacityKwp, 0);
+  }
   check('dcRatio', 'DC ratio', inputs.dcRatio, 1, 1.5);
-  check('specificYield', 'Specific yield', inputs.specificYield, 1200, 1800);
+  check('rooftopGenerationKwhPerKwp', 'Rooftop / BTM annual generation', inputs.rooftopGenerationKwhPerKwp, 1200, 1800);
+  check('openAccessGenerationKwhPerKwp', 'Open Access annual generation', inputs.openAccessGenerationKwhPerKwp, 1200, 1800);
   check('customBessCapacityKwh', 'Custom BESS capacity', inputs.customBessCapacityKwh, 0);
   check('offPeakTariff', 'Off-peak tariff', inputs.offPeakTariff, 0);
   check('peakTariff', 'Peak tariff', inputs.peakTariff, 0);
@@ -162,6 +206,10 @@ export function validateCommercialInputs(inputs: CommercialInputs): Partial<Reco
   check('bessCapexPerKwh', 'BESS CAPEX', inputs.bessCapexPerKwh, 12000, 23000);
   check('solarExcessPercent', 'Solar exceeding daytime load', inputs.solarExcessPercent, 0, 100);
   check('excessLostToSlotLimitsPercent', 'Excess lost to slot limits', inputs.excessLostToSlotLimitsPercent, 0, 100);
+  check('solarDegradationPercent', 'Solar degradation', inputs.solarDegradationPercent, 0, 100);
+  check('bessDegradationPercent', 'BESS degradation', inputs.bessDegradationPercent, 0, 100);
+  check('transmissionWheelingLossPercent', 'Transmission and wheeling losses', inputs.transmissionWheelingLossPercent, 0, 100);
+  check('tariffEscalationPercent', 'Tariff escalation', inputs.tariffEscalationPercent, 0, 100);
   check('roundTripEfficiencyPercent', 'BESS round-trip efficiency', inputs.roundTripEfficiencyPercent, 0, 100);
   check('depthOfDischargePercent', 'Maximum depth of discharge', inputs.depthOfDischargePercent, 0, 100);
   check('annualBessCycles', 'Annual BESS cycles', inputs.annualBessCycles, 0);

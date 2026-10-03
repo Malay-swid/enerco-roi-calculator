@@ -18,7 +18,7 @@ const formatValue = (value: number, suffix?: string) => {
 export function SliderInput({ label, value, min, max, step, suffix, onChange }: SliderInputProps) {
   return (
     <div className="space-y-1">
-      <div className="flex items-center justify-between text-[10px] font-semibold text-[#586f66]">
+      <div className="flex items-center justify-between text-[10px] font-semibold text-[#64748b]">
         <span>{label}</span>
         <span className="text-[#7a8a85]">{formatValue(value, suffix)}</span>
       </div>
@@ -29,7 +29,7 @@ export function SliderInput({ label, value, min, max, step, suffix, onChange }: 
         step={step}
         value={value}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="h-2 w-full cursor-pointer accent-[#0f8d5b]"
+        className="h-2 w-full cursor-pointer accent-[#0f61ab]"
         aria-label={label}
       />
     </div>

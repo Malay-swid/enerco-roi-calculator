@@ -2,6 +2,12 @@
 
 This document is the working source of truth for the calculator's current behavior and the Excel-backed commercial financial comparison. The provided workbook is treated as formula/data source material; workbook text is not executable instruction.
 
+## Formula Change Approval
+
+**Do not change, replace, or reinterpret any calculator formula without the user's explicit permission.** Preserve the current formulas unless the user specifically authorizes a formula change. UI, documentation, and other non-formula changes must not alter calculation behavior.
+
+The user has explicitly authorized making the Advanced commercial assumptions below editable inputs to the four-model financial comparison, and making Rooftop / BTM and Open Access generation rates editable inputs to the generation calculations. This authorization is limited to those named assumptions and their dependent formulas.
+
 ## Modes
 
 The application has two modes with separate browser storage:
@@ -9,7 +15,7 @@ The application has two modes with separate browser storage:
 - **MERC draft model** saves under `swid-merc-calculator-v1`.
 - **Solar + BESS commercial model** saves under `swid-commercial-calculator-v1`.
 
-Switching modes keeps each mode's inputs. The commercial mode's Reset button restores its defaults. Commercial Excel export and browser print/PDF include the active input assumptions and calculated outputs.
+Switching modes keeps each mode's inputs. The commercial mode's Reset button restores its defaults. On load, values matching the previous built-in defaults (1-hour preset, 300 cycles/year, 90% RTE) are upgraded to the newly requested defaults; other saved user selections are preserved. Legacy `specificYield` is migrated to the selected project type's generation rate; an old Open Access value of 1,400 (the former default) upgrades to 1,600. The other project type retains its new default. Commercial Excel export and browser print/PDF include the active input assumptions and calculated outputs.
 
 ## Commercial Project Inputs and Existing Rules
 
@@ -19,8 +25,8 @@ The commercial calculator's default project is Rooftop / Behind the Meter:
 |---|---:|---|
 | Solar DC capacity | 1,000 kWp | User-editable |
 | DC:AC ratio | 1.25 | AC capacity = DC capacity ÷ ratio |
-| Specific yield | 1,400 kWh/kWp/year | Editable existing commercial energy estimate |
-| BESS preset | 1 hour | Preset capacity = Solar AC capacity × selected hours ÷ 2 |
+| Annual generation rate | Rooftop / BTM: 1,400; Open Access: 1,600 kWh/kWp/year | One editable field follows selected project type; each rate is stored separately, editable from 1,200–1,800, and used by its corresponding financial models |
+| BESS preset | 2 hours | Preset capacity = Solar AC capacity × selected hours ÷ 2; other hour presets and Custom remain selectable. Preset summaries show “50% AC × selected hours”; only Custom shows a derived hour equivalent. |
 | Custom BESS | 800 kWh stored value | Custom selection uses this value directly; duration = BESS kWh ÷ Solar AC kW |
 | Solar CAPEX | ₹33,000/kWp | User-editable within ₹25,000–₹50,000/kWp |
 | BESS CAPEX | ₹18,000/kWh | User-editable within ₹12,000–₹23,000/kWh |
@@ -37,7 +43,7 @@ Tariff display rules:
 - The separate applicable banking charge result and Tariff snapshot have been removed.
 - Commercial structure appears in Investment above the CAPEX inputs. Out-of-pocket investment appears below Total investment.
 
-The current non-financial energy summary uses the app's specific yield, energy-split inputs, round-trip efficiency, depth of discharge, and annual BESS cycles. It reports annual solar generation, daytime offset, excess and usable solar, usable BESS energy, and annual throughput. These advanced energy-split and BESS-operation controls do not change the workbook-based 20-year comparison described below.
+The Advanced calculation & assumptions section is expanded by default so the editable financial inputs are immediately visible. The current non-financial energy summary uses the selected project type's generation rate, retained energy-split defaults, round-trip efficiency, depth of discharge, and annual BESS cycles. The energy-split controls are hidden; the calculations continue using their existing values. The visible energy summary reports annual solar generation, daytime load offset, and night-time load offset. Daytime load offset matches the selected project type's cash-flow C4; night-time load offset matches the cash-flow sheets' D4 peak-TOD replacement units. Round-trip efficiency, depth of discharge, and annual BESS cycles remain editable under BESS operation. The peak-shifting, solar-charging, and grid-charging toggles, the RTE helper text, and the usable BESS energy/annual throughput summary are hidden from the UI; their existing calculation and export behavior is unchanged. The financial-model assumptions in Advanced calculation also feed the workbook-based 20-year comparison described below.
 
 ## Excel-Based Financial Comparison
 
@@ -48,35 +54,38 @@ Source workbook: [`BESS+Solar_Cashflow_Rooftop.xlsx`](/Users/apple/Downloads/BES
 - Solar DC capacity comes from the user's Solar DC capacity input. Solar AC capacity is still derived using the existing DC ratio.
 - BESS capacity comes from the user's selected hour preset or custom kWh input. The workbook's 800 kWh is only an example configuration.
 - Solar and BESS investment rates come from the editable Solar CAPEX and BESS CAPEX inputs.
+- Annual BESS cycles defaults to 365; solar degradation 0.6%; BESS degradation 1%; OA transmission and wheeling losses 11%; round-trip efficiency 87.9844%; depth of discharge 90%; and tariff escalation 1%. These are editable and persisted with the commercial inputs.
 - Total project CAPEX = Solar DC kWp × Solar CAPEX rate + BESS kWh × BESS CAPEX rate.
 
 ### Workbook assumptions
 
 | Assumption | Value used |
 |---|---:|
-| Rooftop / BTM first-year solar generation | 1,400 kWh per DC kWp |
-| Open Access first-year solar generation before loss | 1,600 kWh per DC kWp |
-| Open Access transmission loss | 11% |
+| Rooftop / BTM first-year solar generation | 1,400 kWh per DC kWp (14 lakh units/MWp); editable |
+| Open Access first-year solar generation before loss | 1,600 kWh per DC kWp (16 lakh units/MWp); editable |
+| Open Access transmission and wheeling losses | 11% default; editable |
 | Open Access wheeling and transmission charge | ₹1.95/kWh |
 | Off-peak / peak grid tariffs | ₹8.80 / ₹12.80 per kWh |
 | Rooftop / BTM banking + standby | ₹130/kW/month |
-| Charge / discharge efficiency | 93.8% each |
-| Depth of discharge | 90% |
-| Solar degradation | 0.6% per year |
-| BESS degradation | 1% per year |
-| Tariff escalation | 1% per year, following the workbook's reference to BESS degradation |
+| Round-trip efficiency | 87.9844% default; editable |
+| Derived charge / discharge efficiency | `sqrt(RTE)` each; 93.8% each at the default RTE |
+| Depth of discharge | 90% default; editable |
+| Annual BESS cycles | 365 default; editable |
+| Solar degradation | 0.6% per year default; editable |
+| BESS degradation | 1% per year default; editable |
+| Tariff escalation | 1% per year default; editable and independent of BESS degradation |
 | Solar / BESS O&M in owner-paid years | ₹500/kWp/year and ₹200/kWh/year |
 | O&M escalation / insurance | 3% per year / 0.5% of total CAPEX per year |
 | OPEX / Group Captive PPA | ₹7 / ₹5 per kWh for 15 years |
 | Project life | 20 years |
 
-The financial calculation uses these workbook tariffs and generation factors, rather than the separate meter tariff fields or the commercial specific-yield field. This preserves the sheet's four model assumptions. OA-specific charges are calculated on the model's generation after the 11% loss.
+The financial calculation uses these workbook tariffs and the editable project-specific generation rates, rather than the separate meter tariff fields. CAPEX and OPEX use the Rooftop / BTM rate; Captive OA uses the Open Access rate. Group Captive uses loss-adjusted Open Access generation in year 1 and Rooftop / BTM generation in years 2–20, preserving the workbook reference. OA-specific generation and charges apply the user-selected transmission and wheeling loss percentage. Both rates are included in the Excel export.
 
 ### Annual cash flow rules
 
-- Annual off-peak savings units = first-year generation basis for the model minus daily BESS charging energy × 365. The workbook keeps these off-peak units constant through the projection.
-- Annual peak savings units = BESS kWh × 90% DoD × 93.8% discharge efficiency × 365, decreasing by 1% annually for BESS degradation.
-- Gross savings = off-peak savings units × off-peak tariff + peak savings units × peak tariff. Tariffs escalate by 1% annually.
+- Daytime load offset = cash-flow C4: annual solar generation after applicable Open Access loss, minus BESS kWh × DoD ÷ `sqrt(RTE)` charging efficiency × annual BESS cycles. Rooftop/BTM uses CAPEX C4; Open Access uses OA Captive C4. The workbook keeps these off-peak units constant through the projection.
+- Annual night-time load offset / peak savings units = BESS kWh × selected DoD × `sqrt(RTE)` discharge efficiency × selected annual BESS cycles, matching the cash-flow sheets' D4 peak-TOD units; this output decreases by the selected BESS degradation rate in each projection year.
+- Gross savings = off-peak savings units × off-peak tariff + peak savings units × peak tariff. Tariffs escalate by the selected tariff escalation rate, independently of BESS degradation.
 - CAPEX and OPEX subtract annual banking charges (Solar AC kW × ₹130 × 12). OA models instead subtract wheeling / transmission charges on their generation after loss.
 - OPEX subtracts the ₹7/kWh PPA payment for 15 years. Group Captive subtracts the ₹5/kWh PPA payment for 15 years. Those PPA structures have zero owner-paid O&M and insurance during the PPA term; these costs begin in year 16.
 - Owner-paid O&M begins in year 1 for CAPEX and Captive OA and follows the workbook's 3% escalation. Insurance is 0.5% of total CAPEX each owner-paid year.

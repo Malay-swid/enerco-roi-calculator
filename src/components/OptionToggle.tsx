@@ -25,8 +25,8 @@ export function OptionToggle({ items, selected, onSelect, columns = 2 }: OptionT
             onClick={() => onSelect(item.value)}
             className={`rounded-[4px] border px-2 py-2 text-left transition ${
               isSelected
-                ? 'border-[#0f7a57] bg-[#ebf9f1] text-[#174b3b] shadow-sm'
-                : 'border-[#d9dfd9] bg-white text-[#566d64] hover:bg-[#f1f5f2]'
+                ? 'border-[#0f61ab] bg-[#e8f2fb] text-[#0b4f8b] shadow-sm'
+                : 'border-[#d9e2ec] bg-white text-[#64748b] hover:bg-[#f1f6fa]'
             }`}
           >
             <div className="text-[11px] font-semibold leading-[1.2]">{item.label}</div>

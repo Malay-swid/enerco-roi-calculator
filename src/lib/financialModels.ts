@@ -1,4 +1,4 @@
-import type { CommercialInputs, CommercialResults } from './commercialCalculator';
+import type { ReadyCommercialInputs, CommercialResults } from './commercialCalculator';
 
 export type FinancialModelId = 'capex' | 'opex' | 'captive_oa' | 'group_captive';
 export type FinancialIrr = number | 'infinite' | null;
@@ -15,8 +15,7 @@ export interface FinancialModelResult {
 
 export const financialModelAssumptions = {
   projectYears: 20,
-  rooftopGenerationKwhPerKwp: 1400,
-  openAccessGenerationKwhPerKwp: 1600,
+  annualBessCycles: 365,
   offPeakTariffPerKwh: 8.8,
   peakTariffPerKwh: 12.8,
   openAccessTransmissionLossPercent: 11,
@@ -80,7 +79,7 @@ function paybackMonths(cashFlows: number[]): number | null {
 }
 
 export function calculateFinancialModels(
-  inputs: CommercialInputs,
+  inputs: ReadyCommercialInputs,
   currentResults: CommercialResults,
 ): FinancialModelResult[] {
   const assumptions = financialModelAssumptions;
@@ -89,16 +88,25 @@ export function calculateFinancialModels(
   const totalCapex = dcKwp * safeNonNegative(inputs.solarCapexPerKwp)
     + bessKwh * safeNonNegative(inputs.bessCapexPerKwh);
   const acKw = safeNonNegative(currentResults.solarAcCapacityKw);
-  const dod = assumptions.depthOfDischargePercent / 100;
-  const dischargeEfficiency = assumptions.dischargeEfficiencyPercent / 100;
-  const annualChargeEnergy = dischargeEfficiency > 0
-    ? bessKwh * dod / dischargeEfficiency * 365
+  const percent = (value: number) => Math.min(100, safeNonNegative(value));
+  const dod = percent(inputs.depthOfDischargePercent) / 100;
+  // Excel uses equal charge and discharge efficiency (93.8% each). Deriving
+  // both as sqrt(RTE) keeps the workbook's default RTE of 87.9844% equivalent.
+  const chargeAndDischargeEfficiency = Math.sqrt(percent(inputs.roundTripEfficiencyPercent) / 100);
+  const cycles = safeNonNegative(inputs.annualBessCycles);
+  const solarDegradation = percent(inputs.solarDegradationPercent) / 100;
+  const bessDegradation = percent(inputs.bessDegradationPercent) / 100;
+  const transmissionWheelingLoss = percent(inputs.transmissionWheelingLossPercent) / 100;
+  const tariffEscalation = percent(inputs.tariffEscalationPercent) / 100;
+  const rooftopGenerationKwhPerKwp = safeNonNegative(inputs.rooftopGenerationKwhPerKwp);
+  const openAccessGenerationKwhPerKwp = safeNonNegative(inputs.openAccessGenerationKwhPerKwp);
+  const annualChargeEnergy = chargeAndDischargeEfficiency > 0
+    ? bessKwh * dod / chargeAndDischargeEfficiency * cycles
     : 0;
-  const annualDischargedEnergy = bessKwh * dod * dischargeEfficiency * 365;
-  const baseOffPeakUnits = dcKwp * assumptions.rooftopGenerationKwhPerKwp - annualChargeEnergy;
-  const oaOffPeakUnits = dcKwp * assumptions.openAccessGenerationKwhPerKwp
-    * (1 - assumptions.openAccessTransmissionLossPercent / 100) - annualChargeEnergy;
-  const basePeakUnits = annualDischargedEnergy;
+  const baseOffPeakUnits = dcKwp * rooftopGenerationKwhPerKwp - annualChargeEnergy;
+  const oaOffPeakUnits = dcKwp * openAccessGenerationKwhPerKwp
+    * (1 - transmissionWheelingLoss) - annualChargeEnergy;
+  const basePeakUnits = safeNonNegative(currentResults.annualNightTimeLoadOffsetKwh);
   const initialInvestment: Record<FinancialModelId, number> = {
     capex: totalCapex,
     opex: 0,
@@ -114,9 +122,9 @@ export function calculateFinancialModels(
 
   return models.map(({ id, label }) => {
     const openAccess = id === 'captive_oa' || id === 'group_captive';
-    const solarYield = openAccess ? assumptions.openAccessGenerationKwhPerKwp : assumptions.rooftopGenerationKwhPerKwp;
+    const solarYield = openAccess ? openAccessGenerationKwhPerKwp : rooftopGenerationKwhPerKwp;
     const yearOneGeneration = dcKwp * solarYield
-      * (openAccess ? 1 - assumptions.openAccessTransmissionLossPercent / 100 : 1);
+      * (openAccess ? 1 - transmissionWheelingLoss : 1);
     const offPeakUnits = id === 'captive_oa' ? oaOffPeakUnits : baseOffPeakUnits;
     const operatingCashFlows: number[] = [];
 
@@ -124,14 +132,14 @@ export function calculateFinancialModels(
       // The workbook's Group Captive row uses its OA-adjusted generation in year 1,
       // then links years 2-20 to the CAPEX generation rows. Preserve that reference.
       const generationBase = id === 'group_captive' && year > 1
-        ? dcKwp * assumptions.rooftopGenerationKwhPerKwp
+        ? dcKwp * rooftopGenerationKwhPerKwp
         : yearOneGeneration;
-      const generation = generationBase * (1 - assumptions.solarDegradationPercent / 100) ** (year - 1);
+      const generation = generationBase * (1 - solarDegradation) ** (year - 1);
       const degradationAdjustedPeakUnits = basePeakUnits
-        * (1 - assumptions.bessDegradationPercent / 100) ** (year - 1);
-      const tariffEscalation = (1 + assumptions.tariffEscalationPercent / 100) ** (year - 1);
-      const offPeakSavings = offPeakUnits * assumptions.offPeakTariffPerKwh * tariffEscalation;
-      const peakSavings = degradationAdjustedPeakUnits * assumptions.peakTariffPerKwh * tariffEscalation;
+        * (1 - bessDegradation) ** (year - 1);
+      const escalatedTariff = (1 + tariffEscalation) ** (year - 1);
+      const offPeakSavings = offPeakUnits * assumptions.offPeakTariffPerKwh * escalatedTariff;
+      const peakSavings = degradationAdjustedPeakUnits * assumptions.peakTariffPerKwh * escalatedTariff;
       const wheelingCharge = openAccess ? generation * assumptions.wheelingTransmissionPerKwh : 0;
       const fixedBankingCharge = openAccess ? 0 : acKw * 12 * assumptions.fixedBankingPerKwMonth;
       const ppaRate = id === 'opex'
