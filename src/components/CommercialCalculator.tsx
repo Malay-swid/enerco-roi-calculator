@@ -11,6 +11,7 @@ import {
   type MeterType,
   type ProjectType,
 } from '../lib/commercialCalculator';
+import { calculateFinancialModels, financialModelAssumptions, type FinancialModelResult } from '../lib/financialModels';
 
 type FieldKey = keyof CommercialInputs;
 const STORAGE_KEY = 'swid-commercial-calculator-v1';
@@ -33,7 +34,7 @@ function loadSavedInputs(): CommercialInputs {
   }
 }
 
-function downloadExcel(inputs: CommercialInputs, results: ReturnType<typeof calculateCommercialScenario>) {
+function downloadExcel(inputs: CommercialInputs, results: ReturnType<typeof calculateCommercialScenario>, financialModels: FinancialModelResult[]) {
   const rows: Array<[string, string | number]> = [
     ['Solar + BESS Commercial Calculation', ''],
     ['Project type', inputs.projectType === 'open_access' ? 'Open Access' : 'Rooftop / Behind the Meter'],
@@ -72,7 +73,39 @@ function downloadExcel(inputs: CommercialInputs, results: ReturnType<typeof calc
     ['Peak shifting enabled', inputs.peakShifting ? 'Yes' : 'No'],
     ['Solar charging enabled', inputs.solarCharging ? 'Yes' : 'No'],
     ['Grid charging enabled', inputs.gridCharging ? 'Yes' : 'No'],
-    ['Savings and payback', 'Not calculated: dispatch and charge-allocation rules have not been defined.'],
+    ['Financial comparison horizon (years)', financialModelAssumptions.projectYears],
+    ['Rooftop / BTM generation (kWh/kWp/year)', financialModelAssumptions.rooftopGenerationKwhPerKwp],
+    ['Open Access generation (kWh/kWp/year)', financialModelAssumptions.openAccessGenerationKwhPerKwp],
+    ['Open Access transmission loss (%)', financialModelAssumptions.openAccessTransmissionLossPercent],
+    ['Open Access wheeling and transmission charge (₹/kWh)', financialModelAssumptions.wheelingTransmissionPerKwh],
+    ['Rooftop / BTM banking + standby (₹/kW/month)', financialModelAssumptions.fixedBankingPerKwMonth],
+    ['Base off-peak tariff (₹/kWh)', financialModelAssumptions.offPeakTariffPerKwh],
+    ['Base peak tariff (₹/kWh)', financialModelAssumptions.peakTariffPerKwh],
+    ['Charge efficiency (%)', financialModelAssumptions.chargeEfficiencyPercent],
+    ['Discharge efficiency (%)', financialModelAssumptions.dischargeEfficiencyPercent],
+    ['Depth of discharge (%)', financialModelAssumptions.depthOfDischargePercent],
+    ['Solar degradation (%)', financialModelAssumptions.solarDegradationPercent],
+    ['BESS degradation / tariff escalation (%)', financialModelAssumptions.bessDegradationPercent],
+    ['Solar O&M (₹/kWp/year)', financialModelAssumptions.solarOmPerKwp],
+    ['BESS O&M (₹/kWh/year)', financialModelAssumptions.bessOmPerKwh],
+    ['O&M escalation (%)', financialModelAssumptions.annualOmEscalationPercent],
+    ['Insurance (% of CAPEX/year)', financialModelAssumptions.annualInsurancePercent],
+    ['PPA term (years)', financialModelAssumptions.ppaTenureYears],
+    ['OPEX PPA rate (₹/kWh)', financialModelAssumptions.opexPpaPerKwh],
+    ['Group Captive PPA rate (₹/kWh)', financialModelAssumptions.groupCaptivePpaPerKwh],
+    ['Group Captive out-of-pocket share (%)', financialModelAssumptions.groupCaptiveOutOfPocketPercent],
+    ['Financial model results', ''],
+    ...financialModels.flatMap((model) => [
+      [`${model.label} · Out-of-pocket investment (₹)`, model.initialInvestment] as [string, string | number],
+      [`${model.label} · IRR / Return on Investment`, model.irr === 'infinite' ? '∞' : model.irr === null ? 'N/A' : `${(model.irr * 100).toFixed(2)}%`] as [string, string | number],
+      [`${model.label} · ROI / Payback (months)`, model.roiPaybackMonths === null ? 'N/A' : model.roiPaybackMonths] as [string, string | number],
+      [`${model.label} · 20-year cumulative savings (₹)`, model.cumulativeSavings] as [string, string | number],
+    ]),
+    ['Yearly net cash flows', '₹'],
+    ...financialModels.flatMap((model) => model.cashFlows.map((cashFlow, year) => [
+      `${model.label} · Year ${year} net cash flow (₹)`,
+      cashFlow,
+    ] as [string, string | number])),
   ];
   const xml = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
   const cells = rows.map(([key, value], index) => {
@@ -176,11 +209,26 @@ function Output({ label, value, unit, strong = false }: { label: string; value: 
   return <div className="flex items-baseline justify-between gap-3 border-b border-slate-100 py-3 last:border-0"><span className="text-sm text-slate-600">{label}</span><span className={`text-right ${strong ? 'text-lg font-extrabold text-emerald-800' : 'font-semibold text-slate-900'}`}>{value}{unit ? <span className="ml-1 text-xs font-medium text-slate-500">{unit}</span> : null}</span></div>;
 }
 
+function FinancialModelCard({ model }: { model: FinancialModelResult }) {
+  const irr = model.irr === 'infinite' ? '∞' : model.irr === null ? 'N/A' : `${number(model.irr * 100, 2)}%`;
+  const payback = model.roiPaybackMonths === null ? 'No payback' : number(model.roiPaybackMonths, 2);
+  return <article className="rounded-xl border border-white/10 bg-white/[0.07] p-4 sm:p-5">
+    <h3 className="text-base font-extrabold text-white">{model.label}</h3>
+    <div className="mt-3 space-y-1.5">
+      <div className="rounded-lg bg-white/5 px-3 py-2.5"><div className="text-[11px] leading-4 text-emerald-100">Out-of-pocket investment</div><div className="mt-1 text-lg font-extrabold">{money(model.initialInvestment)}</div></div>
+      <div className="rounded-lg bg-white/5 px-3 py-2.5"><div className="text-[11px] leading-4 text-emerald-100">IRR · Return on Investment</div><div className="mt-1 text-xl font-extrabold">{irr}</div></div>
+      <div className="rounded-lg bg-white/5 px-3 py-2.5"><div className="text-[11px] leading-4 text-emerald-100">ROI · Payback (months)</div><div className="mt-1 text-xl font-extrabold">{payback}</div></div>
+      <div className="rounded-lg bg-white/5 px-3 py-2.5"><div className="text-[11px] leading-4 text-emerald-100">20-year cumulative savings</div><div className="mt-1 text-lg font-extrabold">{money(model.cumulativeSavings)}</div></div>
+    </div>
+  </article>;
+}
+
 export function CommercialCalculator({ onModeChange }: { onModeChange: (mode: 'merc' | 'commercial') => void }) {
   const [inputs, setInputs] = useState<CommercialInputs>(loadSavedInputs);
   const [saved, setSaved] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const results = useMemo(() => calculateCommercialScenario(inputs), [inputs]);
+  const financialModels = useMemo(() => calculateFinancialModels(inputs, results), [inputs, results]);
   const errors = useMemo(() => validateCommercialInputs(inputs), [inputs]);
   const hasErrors = Object.keys(errors).length > 0;
 
@@ -212,7 +260,7 @@ export function CommercialCalculator({ onModeChange }: { onModeChange: (mode: 'm
         <div className="flex flex-wrap items-center gap-2"><div className="mr-auto flex rounded-lg bg-slate-100 p-1 md:mr-3"><button type="button" onClick={() => onModeChange('merc')} className="rounded-md px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 sm:text-sm">MERC draft model</button><button type="button" aria-current="page" className="rounded-md bg-white px-3 py-2 text-xs font-bold text-emerald-800 shadow-sm sm:text-sm">Commercial model</button></div>
           <button type="button" onClick={() => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(inputs)); setSaved(true); } catch { setSaved(false); } }} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold hover:bg-slate-50"><Save className="h-4 w-4" />{saved ? 'Saved' : 'Save'}</button>
           <button type="button" onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold hover:bg-slate-50"><Printer className="h-4 w-4" />PDF / Print</button>
-          <button type="button" onClick={() => downloadExcel(inputs, results)} className="inline-flex items-center gap-2 rounded-lg bg-emerald-800 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-900"><Download className="h-4 w-4" />Export Excel</button>
+          <button type="button" onClick={() => downloadExcel(inputs, results, financialModels)} className="inline-flex items-center gap-2 rounded-lg bg-emerald-800 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-900"><Download className="h-4 w-4" />Export Excel</button>
         </div>
       </div>
     </header>
@@ -295,11 +343,15 @@ export function CommercialCalculator({ onModeChange }: { onModeChange: (mode: 'm
           <section className="overflow-hidden rounded-2xl bg-[#103f32] text-white shadow-lg"><div className="border-b border-white/10 px-5 py-5 sm:px-6"><div className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-200">Live project summary</div><h2 className="mt-1 text-xl font-extrabold">Results dashboard</h2></div><div className="grid grid-cols-2 gap-3 p-4 sm:p-5"><div className="rounded-xl bg-white/10 p-4"><div className="text-xs text-emerald-100">Solar DC</div><div className="mt-1 text-xl font-extrabold">{number(inputs.solarDcCapacityKwp, 1)}</div><div className="text-xs text-emerald-100">kWp</div></div><div className="rounded-xl bg-white/10 p-4"><div className="text-xs text-emerald-100">Solar AC</div><div className="mt-1 text-xl font-extrabold">{number(results.solarAcCapacityKw, 1)}</div><div className="text-xs text-emerald-100">kW</div></div><div className="rounded-xl bg-white/10 p-4"><div className="text-xs text-emerald-100">Annual generation</div><div className="mt-1 text-xl font-extrabold">{number(results.annualSolarGenerationKwh / 1000000, 2)}</div><div className="text-xs text-emerald-100">GWh/year</div></div><div className="rounded-xl bg-white/10 p-4"><div className="text-xs text-emerald-100">BESS</div><div className="mt-1 text-xl font-extrabold">{number(results.bessCapacityKwh, 1)}</div><div className="text-xs text-emerald-100">kWh · {number(results.bessDurationHours, 1)} hour</div></div></div>
             <div className="px-5 pb-5 sm:px-6"><div className="mb-2 text-xs font-bold uppercase tracking-wide text-emerald-100">Investment breakdown</div><Output label="Solar investment" value={money(results.solarInvestment)} /><Output label="BESS investment" value={money(results.bessInvestment)} /><Output label="Total project investment" value={money(results.totalInvestment)} strong /></div>
           </section>
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5"><h2 className="font-bold text-amber-950">Savings and payback not calculated</h2><p className="mt-2 text-sm leading-6 text-amber-900">Peak-shift dispatch and charge allocation are not fully defined, so annual savings, payback, ROI, and long-term cash flows are withheld to avoid presenting an unsupported estimate.</p></div>
           {hasErrors ? <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-800">Correct the highlighted inputs before relying on the displayed results or exports.</div> : null}
         </aside>
       </div>
-      <footer className="mt-8 border-t border-slate-200 py-5 text-xs leading-5 text-slate-500">Indicative calculation. Investment and capacity formulas follow the supplied calculator brief. Banking and wheeling charges are displayed by project type and are not subtracted from savings because no complete savings formula was supplied.</footer>
+      <section className="mt-6 rounded-2xl bg-[#103f32] p-4 text-white shadow-lg sm:p-6" aria-labelledby="financial-models-heading">
+        <div className="mb-4"><p className="text-xs font-bold uppercase tracking-[0.15em] text-emerald-200">Excel-based comparison · 20-year project life</p><h2 id="financial-models-heading" className="mt-1 text-xl font-extrabold sm:text-2xl">Financial model results</h2><p className="mt-2 max-w-4xl text-sm leading-6 text-emerald-50/80">IRR is shown as Return on Investment. ROI is shown as payback in months. Cumulative savings includes the initial out-of-pocket investment.</p></div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{financialModels.map((model) => <FinancialModelCard key={model.id} model={model} />)}</div>
+        <p className="mt-4 text-xs leading-5 text-emerald-100/70">OPEX shows 0-month payback and infinite IRR because its initial investment is zero. Results use the workbook&apos;s generation, charge, degradation, escalation, PPA, O&amp;M, and insurance assumptions.</p>
+      </section>
+      <footer className="mt-8 border-t border-slate-200 py-5 text-xs leading-5 text-slate-500">Indicative calculation. Capacity and CAPEX inputs follow the selected project configuration. Financial model assumptions and cash flows follow the supplied BESS + Solar workbook; user-selected BESS capacity replaces the workbook example.</footer>
     </main>
   </div>;
 }
