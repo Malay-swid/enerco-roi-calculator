@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Leaf, Palette } from 'lucide-react';
+import { Palette } from 'lucide-react';
+import { BrandLogo } from './BrandLogo';
 
 const colorThemes = [
   { id: 'forest', label: 'Blue', primary: '#0f61ab', surface: '#e7f0f8' },
@@ -41,10 +42,7 @@ export function Header({ title = 'SWID', accent = 'Working towards a better tomo
     <header className="bg-[#edf5fb]">
       <div className="flex flex-col items-start gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0f61ab] text-white shadow-sm">
-            <Leaf className="h-5 w-5" />
-          </div>
-          <div className="text-[30px] font-black tracking-[-0.08em] text-[#172b40]">{title}</div>
+          <BrandLogo />
         </div>
 
         <div className="relative flex max-w-full items-center gap-2">

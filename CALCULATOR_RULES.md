@@ -17,6 +17,12 @@ The application has two modes with separate browser storage:
 
 Switching modes keeps each mode's inputs. The commercial mode's Reset button restores its defaults. On load, values matching the previous built-in defaults (1-hour preset, 300 cycles/year, 90% RTE) are upgraded to the newly requested defaults; other saved user selections are preserved. Legacy `specificYield` is migrated to the selected project type's generation rate; an old Open Access value of 1,400 (the former default) upgrades to 1,600. The other project type retains its new default. Commercial Excel export and browser print/PDF include the active input assumptions and calculated outputs.
 
+## Brand Asset Rules
+
+- Use `public/swid-logo.png` in the top-left header of both MERC and Commercial modes.
+- Show only the upper SWID mark, clipping the supplied image before its partially cut-off lower tagline. Preserve the original blue, aspect ratio, and white background; do not recolor, stretch, or otherwise distort the logo.
+- Keep the logo responsive and provide descriptive alternative text. The shared logo component defines its visible crop and sizing.
+
 ## Commercial Project Inputs and Existing Rules
 
 The commercial calculator's default project is Rooftop / Behind the Meter:
